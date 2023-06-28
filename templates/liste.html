@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gestion des Tickets</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" rel="stylesheet">
+
+  <!-- Custom CSS -->
+  <style>
+    .ticket-list-item {
+      cursor: pointer;
+    }
+    .ticket-details {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1 class="my-4">Gestion des Tickets</h1>
+    
+    <ul class="nav nav-tabs">
+      <li class="nav-item">
+        <a class="nav-link active" href="#">Tous les Tickets</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="#">Catégorie 1</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="#">Catégorie 2</a>
+      </li>
+    </ul>
+
+    <div class="list-group my-4">
+      <!-- Un ticket -->
+      <div class="list-group-item ticket-list-item">
+        {% for ticket in tickets %}
+
+        <h5 class="mb-1">Ticket #{{ ticket.id }}: Libellé du Ticket</h5>
+        <p class="mb-1">Téléphone: {{ ticket.tel }} | Statut: {{ ticket.status }} | Date: 2023-06-28 14:45</p>
+        <div class="ticket-details">
+          <p>Prenom: Jean | Nom: Dupont | Type de client: Particulier | Immatriculation: AB-123-CD | Marque: Renault | Modèle: Clio | Numéro de fabricant: 123456 | Type d'énergie: Diesel | Catégorie: Catégorie 1</p>
+          <select class="form-control">
+            <option selected>Ouvert</option>
+            <option>En cours</option>
+            <option>Fermé</option>
+          </select>
+        </div>
+      </div>
+      {% endfor %}
+      <!-- Ajoutez d'autres tickets comme celui-ci -->
+    </div>
+  </div>
+
+  <!-- Bootstrap JS & jQuery -->
+  <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+
+  <script>
+    $(document).ready(function() {
+      $('.ticket-list-item').click(function() {
+        $(this).find('.ticket-details').slideToggle();
+      });
+    });
+  </script>
+</body>
+</html>

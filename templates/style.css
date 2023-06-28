@@ -1,0 +1,39 @@
+.tabbed-form {
+    width: 100%;
+}
+
+#tab-titles {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #ccc;
+}
+
+.tab-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-bottom: none;
+    background-color: #eee;
+    cursor: pointer;
+}
+
+.tab-title.active {
+    background-color: #fff;
+    border-bottom: 1px solid #fff;
+}
+
+.remove-tab {
+    margin-left: 10px;
+}
+
+.tab-content {
+    display: none;
+    padding: 10px;
+}
+
+.tab-content.active {
+    display: block;
+}
