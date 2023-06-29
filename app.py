@@ -14,6 +14,8 @@ from sqlalchemy import or_, and_
 from flask import Flask, request, jsonify
 import time
 import json
+from datetime import datetime
+from sqlalchemy.orm import relationship
 
 
  
@@ -40,17 +42,23 @@ class User(db.Model):
     prenom = db.Column(db.String(100))
     nom = db.Column(db.String(100))
     tel = db.Column(db.String(100))
+    tickets = relationship('Ticket', backref='user')
+    code_postal = db.Column(db.Integer)
 
 
 class Ticket(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     status = db.Column(db.String(100))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    pieces = relationship('Piece', backref='ticket')
 
 
 class Category(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     category_name = db.Column(db.String(100))
+    pieces = relationship('Piece', backref='category')
+    color = db.Column(db.String(100))
 
 class Piece(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -62,6 +70,10 @@ class Piece(db.Model):
     libelle = db.Column(db.String(100))
     numero = db.Column(db.String(100))
     energie = db.Column(db.String(100))
+    details = db.Column(db.String(100))
+    etat = db.Column(db.String(100))
+    prix = db.Column(db.String(100))
+
 
 
 
@@ -102,11 +114,11 @@ def searchForUser(prenom, nom, tel):
     return users
 
 def add_categories():
-    new_category = Category(category_name="Carrosserie")
-    new_category2 = Category(category_name="Habitacle")
-    new_category3 = Category(category_name="Roues")
-    new_category4 = Category(category_name="Mecanique Légère")
-    new_category5 = Category(category_name="Mécanique Lourde")
+    new_category = Category(category_name="Carrosserie", color="blue")
+    new_category2 = Category(category_name="Habitacle", color="green")
+    new_category3 = Category(category_name="Roues", color="red")
+    new_category4 = Category(category_name="Mecanique Légère", color="pink")
+    new_category5 = Category(category_name="Mécanique Lourde", color="yellow")
 
     db.session.add_all([new_category, new_category2, new_category3, new_category4, new_category5])
     db.session.commit()
@@ -138,7 +150,7 @@ def submit_ticket():
 
 @app.route('/get_data', methods=['POST'])
 def get_data():
-    #add_categories()
+    add_categories()
     data = request.get_json()
     # Now you can use the data
     
@@ -146,7 +158,7 @@ def get_data():
     if len(alreadyUser) != 0:
         new_user = alreadyUser[0]
     else:
-        new_user = User(type_client=data["type_client"], prenom = data["prenom"], nom = data["nom"], tel=data["tel"])
+        new_user = User(type_client=data["type_client"], prenom = data["prenom"], nom = data["nom"], tel=data["tel"], code_postal = data["code_postal"])
         db.session.add_all([new_user])
         db.session.commit()
 
@@ -155,8 +167,17 @@ def get_data():
     db.session.commit()
 
     new_pieces = []
+    print(data)
+    print(len(data["immat"]) - 1)
     for i in range(len(data["immat"]) - 1):    #TODO
-        new_pieces.append(Piece(ticket_id=new_ticket.id, category_id = categoryDict[data["category"]], immat = data["immat"][i+1], marque = data["marque"][i+1], modele = data["modele"][i+1], libelle = data["libelle"][i+1], numero = data["numero"][i+1], energie = data["energie"][i+1]))
+        print("run")
+        try:
+            new_pieces.append(Piece(ticket_id=new_ticket.id, category_id = categoryDict[data["category"]], immat = data["immat"][i+1], marque = data["marque"][i+1], modele = data["modele"][i+1], libelle = data["libelle"][i+1], numero = data["numero"][i+1], energie = data["energie"][i+1], etat = "En attente de traitement", details = data["details"][i+1], prix = "A définir"))
+        except Exception as e:
+            print("Error: ", str(e))
+
+        print(new_pieces)
+        print("end")
 
     db.session.add_all(new_pieces)
 
@@ -171,3 +192,11 @@ def liste():
     tickets = Ticket.query.filter(Ticket.status != "Terminé").all()
 
     return render_template('liste.html', tickets=tickets)
+
+@app.route('/get_data_editing', methods=['POST'])
+def get_data_editing():
+    data = request.get_json()
+    print(data)
+
+    # You can return a response
+    return json.dumps({'success':True}), 200, {'ContentType':'application/json'}
