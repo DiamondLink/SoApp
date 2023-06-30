@@ -38,6 +38,15 @@
 					<div class="form-group">
 						{{ form.tel.label(class="form-control-label") }}: {{ form.tel(id="tel", class="form-control") }}
 					</div>
+					<label>Code Postal:</label>
+        						<input type="text" class="form-control" id="codePostal" placeholder="Code Postal">
+							</select>
+							<label>Ouvert par:</label>
+								<select class="form-control" id="employeeSelect">
+									{% for emp in employee %}
+										<option>{{ emp.nom }}</option>
+									{% endfor %}
+							</select>
 				</div>				
 					<div class="tabbed-form" id="parts" class="part">
 						<div id="tab-titles">
@@ -72,6 +81,17 @@
 									{{ form.energie.label(class="form-control-label") }}
 									{{ form.energie(class="form-control tabs", placeholder=form.energie.label.text) }}
 								</div>
+							
+
+								<label for="exampleInput">Détails:</label>
+        						<input type="text" class="form-control" id="details" placeholder="Détails">
+
+								<label>Catégorie:</label>
+        							<select class="form-control" id="categorySelect">
+										{% for cat in category %}
+											<option>{{ cat.category_name }}</option>
+										{% endfor %}
+        						
 							</div>
 						</div>
 						
@@ -79,7 +99,7 @@
             </div>
             <form id="myForm" onsubmit="sendData(event)">
 				<!-- your form fields here -->
-				<div class="form-group" style="display:none">
+				<div class="form-group" style="display:none; visibility: hidden;">
 					{{ form.submit(class="btn btn-primary") }}
 				</div>
 				<button class="btn btn-primary" onclick="submitForm()">Enregistrer</button>
@@ -214,20 +234,26 @@ let prenomValue = document.getElementById('prenom').value;
 let nomValue = document.getElementById('nom').value;
 let telValue = document.getElementById('tel').value;
 
+let categoryValue = document.getElementById('categorySelect').value;
+let employeeValue = document.getElementById('employeeSelect').value;
+let detailsValue = document.getElementById('details').value;
+let codepostalValue = document.getElementById('codePostal').value;
+
 	var dict= {
 		"type_client" : typeClientValue,
 		"prenom" : prenomValue,
 		"nom" : nomValue,
 		"tel" : telValue,
-		"code_postal" : "11111",
+		"code_postal" : codepostalValue,
 		"immat" : immat,
 		"marque" : marque,
 		"modele" : modele,
 		"libelle" : libelle,
 		"numero" : num,
 		"energie" : energie,
-		"category" : "Roues",
-		"details" : "details_TODO"
+		"category" : categoryValue,
+		"details" : detailsValue,
+		"employee" : employeeValue
 	}
 
 	var json = JSON.stringify(dict);

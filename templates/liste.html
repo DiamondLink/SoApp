@@ -22,10 +22,7 @@
     padding: 10px;
     margin: 10px;
 
-    .inline {
-      display: flex;
-    align-items: center;
-  }
+
 
 
 
@@ -39,14 +36,24 @@
     
     <ul class="nav nav-tabs">
       <li class="nav-item">
-        <a class="nav-link active" href="#">Tous les Tickets</a>
+        <a class="nav-link active" href="#" id="all" onclick="changeCategory(this)">Tous les Tickets</a>
       </li>
+        {% for categ in category %}
+          {% set ns = namespace(numer_of_piece=0) %}
+            {% for ticket in tickets %}
+              {% if ticket.status != "Terminé" %}
+                {% for piece in ticket.pieces %}
+                  {% if piece.category_id == categ.id %}
+                    {% set ns.numer_of_piece = ns.numer_of_piece + 1 %}
+                    {% endif %}
+                    {% endfor %}
+                  {% endif %}
+                {% endfor %}
+
       <li class="nav-item">
-        <a class="nav-link" href="#">Catégorie 1</a>
+        <a class="nav-link" href="#" style="color: {{categ.color}}; font-weight: bold;" id="{{categ.id}}" onclick="changeCategory(this)">{{categ.category_name}} ({{ns.numer_of_piece}})</a>
       </li>
-      <li class="nav-item">
-        <a class="nav-link" href="#">Catégorie 2</a>
-      </li>
+      {% endfor %}
     </ul>
 
     <div class="list-group my-4">
@@ -55,10 +62,16 @@
         {% for ticket in tickets %}
           {% if ticket.status != "Terminé" %}
 
-<div class="card mb-1">
+          {% set ns = namespace(first_piece_color='') %}
+    {% for piece in ticket.pieces %}
+        {% if loop.first %}
+            {% set ns.first_piece_color = piece.category.color %}
+        {% endif %}
+    {% endfor %}
+<div class="card mb-1 ticketItem" style="border-color: {{ns.first_piece_color}};">
   <div class="card-header" id="heading{{ ticket.id }}" data-toggle="collapse" data-target="#collapse{{ ticket.id }}" aria-expanded="false" aria-controls="collapse{{ ticket.id }}" style="cursor: pointer;">
-    <h5 class="mb-0">Ticket #{{ ticket.id }}: {% for piece in ticket.pieces %}<span class="badge" style="background-color: {{ piece.category.color }};">{{ piece.libelle }}</span>&nbsp;{% endfor %}</h5>
-    <p class="mb-1">Téléphone: {{ ticket.user.tel }} | Statut: {{ ticket.status }} | Date: 2023-06-28 14:45</p>
+    <h5 class="mb-0">Ticket #{{ ticket.id }}: {% for piece in ticket.pieces %}<span class="badge" style="background-color: {{ piece.category.color }}; color:white;">{{ piece.libelle }}</span>&nbsp;{% endfor %}</h5>
+    <p class="mb-1">Téléphone: {{ ticket.user.tel }} | Statut: {{ ticket.status }} | Date: 2023-06-28 14:45 | Crée par Lisa</p>
   </div>
 
   <div id="collapse{{ ticket.id }}" class="collapse" aria-labelledby="heading{{ ticket.id }}" data-parent="#accordion">
@@ -72,7 +85,7 @@
       </button><br>
       {% for piece in ticket.pieces %}
       <hr>
-      <span class="badge" style="color: black; border: 1px solid {{ piece.category.color }}; font-size: 1em;">{{ piece.libelle }}</span>
+      <span class="badge {{piece.category_id}}" style="color: black; border: 1px solid {{ piece.category.color }}; font-size: 1em;">{{ piece.libelle }}</span>
       <br><br>
       <span class="badge" style="color: black; border: 1px solid black; font-size: 1em; font-weight: 400;"> <strong>Immatriculation:</strong> <span class="immat_{{ piece.id }}">{{piece.immat}}</span></span>&nbsp;
       <span class="badge" style="color: black; border: 1px solid black; font-size: 1em; font-weight: 400;"> <strong>Marque:</strong> <span class="marque_{{ piece.id }}">{{piece.marque}}</span></span>&nbsp;
@@ -86,7 +99,7 @@
       
       {% set etats = ['En attente de traitement', 'Disponible', 'Disponible à démonter', 'Indisponible'] %}
 
-      <select id="{{ piece.id }}_{{ ticket.id }}" style="background-color: white;" class="form-control selectClass">
+      <select id="etatPiece_{{ piece.id }}_{{ ticket.id }}" style="background-color: white;" class="form-control selectClass">
       {% for etat in etats %}
           {% if piece.etat == etat %}
               <option selected>{{ etat }}</option>
@@ -94,7 +107,23 @@
               <option>{{ etat }}</option>
           {% endif %}
       {% endfor %}
-      </select>
+      </select><br>
+
+
+      <label for="exampleInput">Géré par:</label>
+
+      <select class="form-control" id="employeePiece_{{ piece.id }}_{{ ticket.id }}" style="background-color: white;">
+        <option selected disabled value="">Choisir un employé...</option>
+        {% for emp in employee %}
+          {% if piece.gere_par == emp.id %}
+            <option value="{{emp.id}}">{{ emp.nom }}</option>
+          {% else %}
+            <option value="{{emp.id}}">{{ emp.nom }}</option>
+          {% endif %}
+        {% endfor %}
+</select>
+
+      
 
     
       
@@ -117,6 +146,32 @@
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
 
 <script>
+
+$(document).ready(function() {
+    $("select[id*='employeePiece']").change(function() {
+      alert(1);
+      alert($(this).attr('id'));
+        var dict = {
+          "gere_par" : $(this).val()
+        }
+        let id = parseInt($(this).attr('id').split('_')[1], 10);
+        alert(id);
+
+        fetch('/update/Piece/' + id, {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(dict)
+}).then(response => {
+    if (!response.ok) {
+        throw new Error("HTTP error " + response.status);
+    }
+})
+    });
+});
+
+
 
 const regex = /(\d+)_(\d+)/;
 
@@ -206,7 +261,7 @@ var dataPiece= {
 		"prix" : p5.value
 	}
 
-  var dataTIcket = {
+  var dataTicket = {
     "status" : "En cours"
   }
 
@@ -338,7 +393,61 @@ function terminer(btn){
         throw new Error("HTTP error " + response.status);
     }
 })
+  btn.parentNode.parentNode.parentNode.style.display = 'none';
+
 }
+
+function changeCategory(el) {
+
+  var searchString = 'collapse';
+
+// Get all elements whose IDs contain the search string
+var elements = document.querySelectorAll('[id*="' + searchString + '"]');
+
+
+// Set display: none for each matching element
+elements.forEach(function(element) {
+  element.parentNode.style.display = 'none';
+});
+
+  var selectedCategory = el.id;
+  
+  // If "All" is selected, show all tickets
+  if (selectedCategory === "all") {
+    showAllTickets();
+  }
+  else {
+    // Otherwise, only show tickets of the selected category
+    showTicketsByCategory(selectedCategory);
+  }
+};
+
+
+function showAllTickets() {
+  var searchString = 'collapse';
+
+// Get all elements whose IDs contain the search string
+var elements = document.querySelectorAll('[id*="' + searchString + '"]');
+
+
+// Set display: none for each matching element
+elements.forEach(function(element) {
+  element.parentNode.style.display = 'block';
+});
+}
+
+function showTicketsByCategory(categoryId) {
+  var tickets = document.getElementsByClassName(categoryId);
+
+  for (var i = 0; i < tickets.length; i++) {
+
+    var parentElement = tickets[i].parentNode;
+    var grandparentElement = parentElement.parentNode;
+    parentElement.parentNode.parentNode.style.display = 'block';
+}
+}
+
+
 
 
 
