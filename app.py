@@ -189,9 +189,42 @@ def get_data():
 
 @app.route('/liste')
 def liste():
-    tickets = Ticket.query.filter(Ticket.status != "Terminé").all()
+    tickets = Ticket.query.all()
 
     return render_template('liste.html', tickets=tickets)
+
+
+
+from flask import request
+
+from flask import request
+
+@app.route('/update/<string:table_name>/<int:item_id>', methods=['POST'])
+def update_item(table_name, item_id):
+    data = request.get_json()  # get the data from the POST request
+
+    if table_name == 'Piece':
+        item = Piece.query.get(item_id)
+    elif table_name == 'Ticket':
+        item = Ticket.query.get(item_id)
+    else:
+        return f"Table {table_name} not found", 404
+
+    if item:
+        for key, value in data.items():
+            if hasattr(item, key):  # only update if the key exists in your model
+                setattr(item, key, value)
+        db.session.commit()
+        return f"Item ID {item_id} in {table_name} updated successfully", 200
+    else:
+        return f"Item with ID {item_id} in {table_name} not found", 404
+
+
+
+
+
+
+
 
 @app.route('/get_data_editing', methods=['POST'])
 def get_data_editing():
