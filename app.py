@@ -112,7 +112,7 @@ class Employee(db.Model):
 
 class TicketForm(FlaskForm):
     # Informations sur le client
-    type_client = SelectField('Type de Client', choices=[('individuel', 'Individuel'), ('professionel', 'Professionnel')], validators=[DataRequired()])
+    type_client = SelectField('Type de Client', choices=[('individuel', 'Individuel'), ('professionel', 'Professionnel')], validators=[DataRequired()], render_kw={"placeholder": "Type Client"})
 
 
     prenom = StringField('Prénom', validators=[DataRequired()])
@@ -121,10 +121,10 @@ class TicketForm(FlaskForm):
     
     # Informations sur la pièce automobile
     immat = StringField("Immatriculation", validators=[DataRequired()])
-    marque = StringField('Marque de la Voiture', validators=[DataRequired()])
+    marque = StringField('Marque', validators=[DataRequired()])
     modele = StringField("Modèle", validators=[DataRequired()])
     libelle = StringField('Libellé', validators=[DataRequired()])
-    code_constr_moteur = StringField('Numéro Fabriquant/Moteur', validators=[DataRequired()])
+    code_constr_moteur = StringField('N° Fabriquant/Moteur', validators=[DataRequired()])
     energie = StringField('Énergie')
 
     submit = SubmitField('Soumettre le Billet')
@@ -149,6 +149,15 @@ def add_categories():
     new_category5 = Category(category_name="Mécanique Lourde", color="orange")
 
     db.session.add_all([new_category, new_category2, new_category3, new_category4, new_category5])
+    db.session.commit()
+
+def add_employee():
+    new_employee = Employee(nom = "Lisa")
+    new_employee2 = Employee(nom = "Fabien")
+    new_employee3 = Employee(nom = "Kevin")
+    
+
+    db.session.add_all([new_employee, new_employee2, new_employee3])
     db.session.commit()
 
  
@@ -192,14 +201,18 @@ def get_data():
     db.session.commit()
 
     new_pieces = []
+
+    for key, value in data.items():
+        if isinstance(value, list):
+            data[key] = [item for item in value if item is not None]
+
     print(data)
-    print(len(data["immat"]) - 1)
-    for i in range(len(data["immat"]) - 1):    #TODO
+    for i in range(len(data["immat"])):    #TODO
         print("run")
         try:
-            category = Category.query.filter_by(category_name=data['category']).first()
+            category = Category.query.filter_by(category_name=data['category'][i]).first()
             employee = Employee.query.filter_by(nom=data["employee"]).first()
-            new_pieces.append(Piece(ouvert_par = employee.id, ticket_id=new_ticket.id, category_id = category.id, immat = data["immat"][i+1], marque = data["marque"][i+1], modele = data["modele"][i+1], libelle = data["libelle"][i+1], numero = data["numero"][i+1], energie = data["energie"][i+1], etat = "En attente de traitement", details = data["details"][i+1], prix = "A définir"))
+            new_pieces.append(Piece(ouvert_par = employee.id, ticket_id=new_ticket.id, category_id = category.id, immat = data["immat"][i], marque = data["marque"][i], modele = data["modele"][i], libelle = data["libelle"][i], numero = data["numero"][i], energie = data["energie"][i], etat = "En attente de traitement", details = data["details"][i], prix = "A définir"))
         except Exception as e:
             print("Error: ", str(e))
 
@@ -213,6 +226,9 @@ def get_data():
     # You can return a response
     return json.dumps({'success':True}), 200, {'ContentType':'application/json'}
 
+@app.route("/menu")
+def menu():
+    return render_template("menu.html")
 
 @app.route('/liste')
 def liste():
@@ -324,6 +340,8 @@ class PieceAdmin(ModelView):
 
     column_formatters = dict(
         user=lambda v, c, m, p: Markup(f'<a href="{get_url("user.edit_view", id=m.user.id)}">{m.user.nom} {m.user.prenom}</a>') if m.user else '',
+        ouvert_par= lambda v, c, m, p: m.ouvert_employee.nom if m.ouvert_employee else '',
+        gere_par= lambda v, c, m, p: m.gere_employee.nom if m.gere_employee else ''
     )
 
     column_list = ('immat', 'marque', 'modele', 'libelle', 'numero', 'energie', 'details', 'etat', 'prix', 'user', "ouvert_par", "gere_par")

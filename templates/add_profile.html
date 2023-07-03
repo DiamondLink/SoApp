@@ -5,6 +5,8 @@
     <!-- Bootstrap CSS -->
 	<link rel="stylesheet" href="style.css">
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
 	<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
@@ -15,95 +17,192 @@
 		color: black;
 		border-color: black;
 	}
+	#vertical-line {
+  border-left: 1px solid black;
+  position: absolute;
+  top: 20%; /* The top margin is set to 10% of the viewport height */
+  bottom: -20%; /* The bottom margin is set to 10% of the viewport height */
+  left: 50%; /* This positions the line in the middle of the viewport */
+}
 	</style>
 </head>
 <body>
+	<nav class="navbar navbar-expand-lg navbar-light bg-light">
+		<a class="navbar-brand" href="menu">
+			<img width=200 src="static/soa.png" alt="Logo">
+		</a>
+		<button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+		  <span class="navbar-toggler-icon"></span>
+		</button>
+		<div class="collapse navbar-collapse" id="navbarNav">
+		  <ul class="navbar-nav">
+			<li class="nav-item active">
+			  <a class="nav-link" href="menu">Menu</a>
+			</li>
+			<li class="nav-item">
+			  <a class="nav-link" href="liste">Liste</a>
+			</li>
+			<li class="nav-item">
+			  <a class="nav-link" href="ticket">Crée un ticket</a>
+			</li>
+			<li class="nav-item">
+				<a class="nav-link" href="admin" target="_blank" onclick="openInNewTab(event)">Database</a>
+			</li>
+		  </ul>
+		</div>
+	  </nav>
     <!-- Style and navbar removed for brevity -->
     <div class="container">
-        <h2 class="my-4">Submit Ticket</h2>
+        <h3 class="my-3">Infos Client</h3>
+		<hr>
         <form method="POST">
             {{ form.hidden_tag() }}
             <!-- Customer and ticket info here -->
             <div class="row">
                 <div class="col-md-6">
-					<div class="form-group">
-						{{ form.type_client.label(class="form-control-label") }}: {{ form.type_client(id="type_client", class="form-control") }}
-					</div>
-					<div class="form-group">
-						{{ form.prenom.label(class="form-control-label") }}: {{ form.prenom(id="prenom", class="form-control") }}
-					</div>
-					<div class="form-group">
-						{{ form.nom.label(class="form-control-label") }}: {{ form.nom(id="nom", class="form-control") }}
-					</div>
-					<div class="form-group">
-						{{ form.tel.label(class="form-control-label") }}: {{ form.tel(id="tel", class="form-control") }}
-					</div>
-					<label>Code Postal:</label>
-        						<input type="text" class="form-control" id="codePostal" placeholder="Code Postal">
-							</select>
-							<label>Ouvert par:</label>
-								<select class="form-control" id="employeeSelect">
-									{% for emp in employee %}
-										<option>{{ emp.nom }}</option>
-									{% endfor %}
-							</select>
-				</div>				
-					<div class="tabbed-form" id="parts" class="part">
-						<div id="tab-titles">
-							<div class="tab-title active" id="buttons">
-								<button class="btn btn-primary piece" id="piece1" type="button">Pièce 1</button>
-							</div>
+					<div class="form-group row">
+						<label for="type_client" class="col-sm-4 col-form-label" style="font-weight: 700;">{{ form.type_client.label }} :</label>
+						<div class="col-sm-6">
+						{{ form.type_client(id="type_client", class="form-control") }}
 						</div>
-						<button class="form-group" id="add-tab" type="button">Add Tab</button>
+					</div>
+					<div class="form-group row">
+						<label for="type_client" class="col-sm-4 col-form-label" style="font-weight: 700;">{{ form.prenom.label }} :</label>
+						<div class="col-sm-6">
+						{{ form.prenom(id="prenom", class="form-control") }}
+						</div>
+					</div>
+					<div class="form-group row">
+						<label for="type_client" class="col-sm-4 col-form-label" style="font-weight: 700;">{{ form.nom.label }} :</label>
+						<div class="col-sm-6">
+						{{ form.nom(id="nom", class="form-control") }}
+						</div>
+					</div>
+					<div class="form-group row">
+						<label for="type_client" class="col-sm-4 col-form-label" style="font-weight: 700;">{{ form.tel.label }} :</label>
+						<div class="col-sm-6">
+						{{ form.tel(id="tel", class="form-control") }}
+						</div>
+					</div>
+
+					<div class="form-group row">
+						<label class="col-form-label col-sm-4" for="codePostal" style="font-weight: 700;">Code Postal:</label>
+						<div class="col-sm-6">
+							<input type="text" class="form-control" id="codePostal">
+						</div>
+					</div>
+					
+
+<div class="row">
+    <div class="col-sm-4">
+        <label class="col-form-label" style="font-weight: 700;">Ouvert par:</label>
+    </div>
+    <div class="col-sm-6">
+        <select class="form-control" id="employeeSelect">
+            {% for emp in employee %}
+                <option>{{ emp.nom }}</option>
+            {% endfor %}
+        </select>
+    </div>
+<br><br><br><br>
+	<form id="myForm" onsubmit="sendData(event)">
+		<!-- your form fields here -->
+		<div class="form-group" style="display:none; visibility: hidden;">
+			{{ form.submit(class="btn btn-primary") }}
+		</div>
+		<button class="btn btn-success" onclick="submitForm()" style="margin-left: 70%;">Enregistrer</button>
+	</form>
+</div>
+
+				</div>
+				
+				<div id="vertical-line"></div>
+				<div style="margin-right: 20px;
+				margin-left: 20px;"></div>
+
+					<div class="tabbed-form" id="parts" class="part">
+						<div id="tab-titles" style="display: flex;">
+							<div class="tab-title active" id="buttons">
+								<button class="btn btn-primary piece" id="piece1" type="button">Pièce 1   <i style="display:none;" class="fas fa-times"></i></button>
+							</div>
+							<button class="btn btn-outline-primary" id="add-tab" type="button">
+								<i class="fas fa-plus"></i>
+							</button>
+						</div>
+						<hr>
+						
 						<div>
 							<div class="tab-content active" id="tab-content-1">
-								<div class="form-group">
-									{{ form.immat.label(class="form-control-label") }}
-									{{ form.immat(class="form-control tabs", placeholder=form.immat.label.text) }}
+								<div class="form-group row">
+									<label for="type_client" class="col-sm-6 col-form-label" style="font-weight: 700;">{{ form.immat.label }} :</label>
+									<div class="col-sm-6">
+									{{ form.immat(class="form-control tabs") }}
+									</div>
 								</div>
-								<div class="form-group">
-									{{ form.marque.label(class="form-control-label") }}
-									{{ form.marque(class="form-control tabs", placeholder=form.marque.label.text) }}
+								<div class="form-group row">
+									<label for="type_client" class="col-sm-6 col-form-label" style="font-weight: 700;">{{ form.marque.label }} :</label>
+									<div class="col-sm-6">
+									{{ form.marque(class="form-control tabs") }}
+									</div>
 								</div>
-								<div class="form-group">
-									{{ form.modele.label(class="form-control-label") }}
-									{{ form.modele(class="form-control tabs", placeholder=form.modele.label.text) }}
+								<div class="form-group row">
+									<label for="type_client" class="col-sm-6 col-form-label" style="font-weight: 700;">{{ form.modele.label }} :</label>
+									<div class="col-sm-6">
+									{{ form.modele(class="form-control tabs") }}
+									</div>
 								</div>
-								<div class="form-group">
-									{{ form.libelle.label(class="form-control-label") }}
-									{{ form.libelle(class="form-control tabs", placeholder=form.libelle.label.text) }}
+								<div class="form-group row">
+									<label for="type_client" class="col-sm-6 col-form-label" style="font-weight: 700;">{{ form.libelle.label }} :</label>
+									<div class="col-sm-6">
+									{{ form.libelle(class="form-control tabs") }}
+									</div>
 								</div>
-								<div class="form-group">
-									{{ form.code_constr_moteur.label(class="form-control-label") }}
-									{{ form.code_constr_moteur(class="form-control tabs", placeholder=form.code_constr_moteur.label.text) }}
+								<div class="form-group row">
+									<label for="type_client" class="col-sm-6 col-form-label" style="font-weight: 700;">{{ form.code_constr_moteur.label }} :</label>
+									<div class="col-sm-6">
+									{{ form.code_constr_moteur(class="form-control tabs") }}
+									</div>
 								</div>
-								<div class="form-group">
-									{{ form.energie.label(class="form-control-label") }}
-									{{ form.energie(class="form-control tabs", placeholder=form.energie.label.text) }}
+								<div class="form-group row">
+									<label for="type_client" class="col-sm-6 col-form-label" style="font-weight: 700;">{{ form.energie.label }} :</label>
+									<div class="col-sm-6">
+									{{ form.energie(class="form-control tabs") }}
+									</div>
 								</div>
 							
 
-								<label for="exampleInput">Détails:</label>
-        						<input type="text" class="form-control" id="details" placeholder="Détails">
+								<div class="form-group row">
+									<label class="col-form-label col-sm-6" for="codePostal" style="font-weight: 700;">Détails :</label>
+									<div class="col-sm-6">
+										<input type="text" class="form-control tabs" id="details">
+									</div>
+								</div>
 
-								<label>Catégorie:</label>
-        							<select class="form-control" id="categorySelect">
-										{% for cat in category %}
-											<option>{{ cat.category_name }}</option>
-										{% endfor %}
+
+								<div class="row">
+									<div class="col-sm-6">
+										<label class="col-form-label" style="font-weight: 700;">Catégorie :</label>
+									</div>
+									<div class="col-sm-6">
+										<select class="form-control tabs" id="categorySelect">
+											{% for cat in category %}
+    {% if loop.first %}
+        <option selected>{{ cat.category_name }}</option>
+    {% else %}
+        <option>{{ cat.category_name }}</option>
+    {% endif %}
+{% endfor %}
+
+										</select>
+									</div>
+								</div>
+								<br><br><br>
         						
 							</div>
 						</div>
 						
 					</div>
             </div>
-            <form id="myForm" onsubmit="sendData(event)">
-				<!-- your form fields here -->
-				<div class="form-group" style="display:none; visibility: hidden;">
-					{{ form.submit(class="btn btn-primary") }}
-				</div>
-				<button class="btn btn-primary" onclick="submitForm()">Enregistrer</button>
-			</form>
 			
         </form>
     </div>
@@ -115,16 +214,24 @@ function insertAfter(referenceNode, newNode) {
   referenceNode.parentNode.insertBefore(newNode, referenceNode.nextSibling);
 }
 
+function openInNewTab(event) {
+    event.preventDefault(); // Prevent the default link behavior
+    const url = event.currentTarget.getAttribute('href');
+    const newTab = window.open(url, '_blank');
+    newTab.focus();
+  }
+
 immat = [];
 marque = [];
 modele = [];
 libelle = [];
 num = [];
 energie = [];
+categ = [];
+details = [];
 var currentNum = 1;
 var nbBoutons = 1;
 $('#add-tab').click(function(){
-	alert("ok");
 	nbBoutons++;
 	var link = document.getElementsByClassName(`tabs`);
 		immat[currentNum] = link[0].value;
@@ -133,6 +240,8 @@ $('#add-tab').click(function(){
 		libelle[currentNum] = link[3].value;
 		num[currentNum] = link[4].value;
 		energie[currentNum] = link[5].value;
+		details[currentNum] = link[6].value;
+		categ[currentNum] = link[7].value;
 
 		link[0].value="";
 		link[1].value="";
@@ -140,34 +249,38 @@ $('#add-tab').click(function(){
 		link[3].value="";
 		link[4].value="";
 		link[5].value="";
+		link[6].value="";
+		//link[7].value="";
 
 		currentButton = document.getElementById(`piece${currentNum}`);
-		currentButton.className = "btn-custom piece";
+		currentButton.className = "btn btn-custom piece";
 
 		currentNum = nbBoutons;
 
 		var a = document.createElement("button");
 		a.type="button";
-		a.innerText = `Pièce ${nbBoutons}`;
+		a.innerText = `Pièce ${nbBoutons}   `;
 		a.className = "btn btn-primary piece";
 		a.id = `piece${nbBoutons}`;
 
 		var prec = document.getElementById("buttons");
-		
-		var removeBtn = document.createElement("button");
-    	removeBtn.innerText = "X";
-		removeBtn.type="button";
-    	removeBtn.style.marginLeft = "5px"
-		removeBtn.id=`delete${currentNum}`;
 
-		a.appendChild(removeBtn);
+
+
+		var icon = document.createElement('i');
+		icon.className = "fas fa-times";
+		icon.id = `delete${currentNum}`;
+
+
+		a.appendChild(icon);
 
 
 
 		prec.appendChild(a);
 });
 
-$(document).on('click', "[id*='delete']", function(){
+$(document).on('click', "[id*='delete']", function(event){
+	event.stopPropagation();
 	var id = $(this).attr('id');
 	nbBoutons-=1;
 	numDeleted = id.replace(/[^0-9]/g,'');
@@ -178,17 +291,33 @@ $(document).on('click', "[id*='delete']", function(){
 	element = document.getElementById(`piece${numDeleted}`);
 	element.remove();
 	
-	immat[numDeleted] = none;
-	marque[numDeleted] = none;
-	modele[numDeleted] = none;
-	libelle[numDeleted] = none;
-	num[numDeleted] = none;
-	energie[numDeleted] = none;
+	
+	immat[numDeleted] = undefined;
+	marque[numDeleted] = undefined;
+	modele[numDeleted] = undefined;
+	libelle[numDeleted] = undefined;
+	num[numDeleted] = undefined;
+	energie[numDeleted] = undefined;
+	details[numDeleted] = undefined;
+	categ[numDeleted] = undefined;
+
 
 	if (numDeleted == currentNum){
 		currentNum-=1;
-		element = document.getElementById(`piece${numDeleted}`);
-		element.click();
+		currentButton = document.getElementById(`piece${currentNum}`);
+		currentButton.className = "btn btn-primary piece";
+
+		var link = document.getElementsByClassName(`tabs`);
+
+
+		link[0].value=immat[currentNum];
+		link[1].value=marque[currentNum];
+	    link[2].value=modele[currentNum];
+		link[3].value=libelle[currentNum];
+		link[4].value=num[currentNum];
+		link[5].value=energie[currentNum];
+		link[6].value=details[currentNum];
+		link[7].value=categ[currentNum];
 	}
 });
 
@@ -201,14 +330,16 @@ $(document).on('click', "[id*='piece']", function(){
 		libelle[currentNum] = link[3].value;
 		num[currentNum] = link[4].value;
 		energie[currentNum] = link[5].value;
+		details[currentNum] = link[6].value;
+		categ[currentNum] = link[7].value;
 
 		currentButton = document.getElementById(`piece${currentNum}`);
-		currentButton.className = "btn-custom piece";
+		currentButton.className = "btn btn-custom piece";
 
 
 		currentNum = id.replace(/[^0-9]/g,'');
 
-		this.className = "btn-primary piece";
+		this.className = "btn btn-primary piece";
 
 
 		link[0].value=immat[currentNum];
@@ -217,6 +348,8 @@ $(document).on('click', "[id*='piece']", function(){
 		link[3].value=libelle[currentNum];
 		link[4].value=num[currentNum];
 		link[5].value=energie[currentNum];
+		link[6].value=details[currentNum];
+		link[7].value=categ[currentNum];
 });
 
 function submitForm() {
@@ -228,15 +361,15 @@ function submitForm() {
 		libelle[currentNum] = link[3].value;
 		num[currentNum] = link[4].value;
 		energie[currentNum] = link[5].value;
+		details[currentNum] = link[6].value;
+		categ[currentNum] = link[7].value;
 
 	let typeClientValue = document.getElementById('type_client').value;
 let prenomValue = document.getElementById('prenom').value;
 let nomValue = document.getElementById('nom').value;
 let telValue = document.getElementById('tel').value;
 
-let categoryValue = document.getElementById('categorySelect').value;
 let employeeValue = document.getElementById('employeeSelect').value;
-let detailsValue = document.getElementById('details').value;
 let codepostalValue = document.getElementById('codePostal').value;
 
 	var dict= {
@@ -251,8 +384,8 @@ let codepostalValue = document.getElementById('codePostal').value;
 		"libelle" : libelle,
 		"numero" : num,
 		"energie" : energie,
-		"category" : categoryValue,
-		"details" : detailsValue,
+		"category" : categ,
+		"details" : details,
 		"employee" : employeeValue
 	}
 
