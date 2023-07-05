@@ -62,32 +62,36 @@
                 <div class="col-md-6">
 					<div class="form-group row">
 						<label for="type_client" class="col-sm-4 col-form-label" style="font-weight: 700;">{{ form.type_client.label }} :</label>
-						<div class="col-sm-6">
+						<div class="col-sm-6 infos">
 						{{ form.type_client(id="type_client", class="form-control") }}
 						</div>
 					</div>
 					<div class="form-group row">
 						<label for="type_client" class="col-sm-4 col-form-label" style="font-weight: 700;">{{ form.prenom.label }} :</label>
-						<div class="col-sm-6">
+						<div class="col-sm-6 infos">
 						{{ form.prenom(id="prenom", class="form-control") }}
 						</div>
 					</div>
 					<div class="form-group row">
 						<label for="type_client" class="col-sm-4 col-form-label" style="font-weight: 700;">{{ form.nom.label }} :</label>
-						<div class="col-sm-6">
+						<div class="col-sm-6 infos">
 						{{ form.nom(id="nom", class="form-control") }}
 						</div>
 					</div>
 					<div class="form-group row">
 						<label for="type_client" class="col-sm-4 col-form-label" style="font-weight: 700;">{{ form.tel.label }} :</label>
-						<div class="col-sm-6">
-						{{ form.tel(id="tel", class="form-control") }}
+						<div class="col-sm-6 infos">
+							<div class="input-group">
+								<span class="input-group-text">+33</span>
+								{{ form.tel(id="tel", class="form-control") }}
+							</div>
 						</div>
 					</div>
+					
 
 					<div class="form-group row">
 						<label class="col-form-label col-sm-4" for="codePostal" style="font-weight: 700;">Code Postal:</label>
-						<div class="col-sm-6">
+						<div class="col-sm-6 infos">
 							<input type="text" class="form-control" id="codePostal">
 						</div>
 					</div>
@@ -108,7 +112,7 @@
 	<form id="myForm" onsubmit="sendData(event)">
 		<!-- your form fields here -->
 		<div class="form-group" style="display:none; visibility: hidden;">
-			{{ form.submit(class="btn btn-primary") }}
+			{{ form.submit(class="btn") }}
 		</div>
 		<button class="btn btn-success" onclick="submitForm()" style="margin-left: 70%;">Enregistrer</button>
 	</form>
@@ -140,17 +144,34 @@
 									</div>
 								</div>
 								<div class="form-group row">
-									<label for="type_client" class="col-sm-6 col-form-label" style="font-weight: 700;">{{ form.marque.label }} :</label>
+									<label for="marque" class="col-sm-6 col-form-label" style="font-weight: 700;">Marque :</label>
 									<div class="col-sm-6">
-									{{ form.marque(class="form-control tabs") }}
+										<select id="marque" class="form-control tabs">
+											<option value="" disabled selected>Select Marque</option>
+											{% for marque in data %}
+												<option value="{{ marque }}">{{ marque }}</option>
+											{% endfor %}
+										</select>
 									</div>
 								</div>
 								<div class="form-group row">
-									<label for="type_client" class="col-sm-6 col-form-label" style="font-weight: 700;">{{ form.modele.label }} :</label>
+									<label for="modele" class="col-sm-6 col-form-label" style="font-weight: 700;">Modele :</label>
 									<div class="col-sm-6">
-									{{ form.modele(class="form-control tabs") }}
+										<select id="modele" class="form-control tabs">
+											<option value="" disabled selected>Select Modele</option>
+										</select>
 									</div>
 								</div>
+								<div class="form-group row">
+									<label for="phase" class="col-sm-6 col-form-label" style="font-weight: 700;">Phase :</label>
+									<div class="col-sm-6">
+										<select id="phase" class="form-control phase">
+											<option value="" disabled selected>Select Phase</option>
+										</select>
+									</div>
+								</div>
+								
+								
 								<div class="form-group row">
 									<label for="type_client" class="col-sm-6 col-form-label" style="font-weight: 700;">{{ form.libelle.label }} :</label>
 									<div class="col-sm-6">
@@ -164,9 +185,21 @@
 									</div>
 								</div>
 								<div class="form-group row">
-									<label for="type_client" class="col-sm-6 col-form-label" style="font-weight: 700;">{{ form.energie.label }} :</label>
+									<label class="col-form-label col-sm-6" style="font-weight: 700;">Ref Moteur :</label>
 									<div class="col-sm-6">
-									{{ form.energie(class="form-control tabs") }}
+										<input type="text" class="form-control infos" id="moteur">
+									</div>
+								</div>
+								<div class="form-group row">
+									<label for="phase" class="col-sm-6 col-form-label" style="font-weight: 700;">Type d'énergie :</label>
+									<div class="col-sm-6">
+										<select id="phase" class="form-control tabs">
+											<option>Diesel</option>
+											<option>Essence</option>
+											<option>Electrique</option>
+											<option>Hybrid</option>
+											<option>Essence GPL</option>
+										</select>
 									</div>
 								</div>
 							
@@ -210,6 +243,71 @@
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
 	<script>
 
+
+$(document).ready(function(){
+  $('#type_client').change(function(){
+    var selectedValue = $(this).val();
+    if(selectedValue === 'particulier') { 
+      $('label[for=prenom]').text('Prénom');
+      $('label[for=nom]').text('Nom');
+    } 
+    else if(selectedValue === 'professionnel') { 
+      $('label[for=prenom]').text('Société');
+      $('label[for=nom]').text('Contact');
+    }
+  });
+});
+
+
+
+$(document).ready(function() {
+    var data = {{ data | tojson }};
+    $('#marque, #modele').change(function() {
+        var selectedMarque = $('#marque').val();
+        var selectedModel = $('#modele').val();
+        
+        if ($(this).attr('id') === 'marque') {
+            var models = Object.keys(data[selectedMarque]);
+            $('#modele').empty();
+            $('#modele').append(new Option("Select Modele", "", true, true)); // Added
+            $.each(models, function(index, model) {
+                $('#modele').append(new Option(model, model));
+            });
+            $('#modele').change();
+        } else if ($(this).attr('id') === 'modele') {
+            var phases = data[selectedMarque][selectedModel];
+            $('#phase').empty();
+            $('#phase').append(new Option("Select Phase", "", true, true)); // Added
+            $.each(phases, function(index, phase) {
+                $('#phase').append(new Option(phase, phase));
+            });
+        }
+    }).change();
+});
+
+function clearFields() {
+    var links = document.getElementsByClassName(`tabs`);
+    for (let l of links){
+        l.value = "";
+    }
+    var links2 = document.getElementsByClassName(`infos`);
+    for (let l of links2){
+        l.value = "";
+    }
+}
+
+
+function resetSelectFields() {
+    $('#marque').prop('selectedIndex', 0);
+    $('#modele').empty().append(new Option("Select Modele", "", true, true));
+    $('#phase').empty().append(new Option("Select Phase", "", true, true));
+}
+
+// You can call this function whenever you want to reset the select fields
+resetSelectFields();
+
+
+
 function insertAfter(referenceNode, newNode) {
   referenceNode.parentNode.insertBefore(newNode, referenceNode.nextSibling);
 }
@@ -229,10 +327,16 @@ num = [];
 energie = [];
 categ = [];
 details = [];
-var currentNum = 1;
+ref_mot=[]
+
+phase = [];
 var nbBoutons = 1;
+var id_count = 1;
 $('#add-tab').click(function(){
+	currentButton = document.getElementsByClassName(`btn-primary`)[0];
+	currentNum = currentButton.id.replace(/[^0-9]/g,'');
 	nbBoutons++;
+	id_count++;
 	var link = document.getElementsByClassName(`tabs`);
 		immat[currentNum] = link[0].value;
 		marque[currentNum] = link[1].value;
@@ -243,25 +347,40 @@ $('#add-tab').click(function(){
 		details[currentNum] = link[6].value;
 		categ[currentNum] = link[7].value;
 
+
+		var phaseElement = document.getElementsByClassName(`phase`)[0];
+		var moteurElement = document.getElementById("moteur");
+
+		ref_mot[currentNum] = moteurElement.value;
+
+
+		phase[currentNum] = phaseElement.value;
+
+
 		link[0].value="";
-		link[1].value="";
-	    link[2].value="";
+		//link[1].value="";
+	    //link[2].value="";
 		link[3].value="";
 		link[4].value="";
 		link[5].value="";
 		link[6].value="";
 		//link[7].value="";
 
-		currentButton = document.getElementById(`piece${currentNum}`);
+		moteurElement.value = "";
+
+
+		resetSelectFields();
+
+
 		currentButton.className = "btn btn-custom piece";
 
 		currentNum = nbBoutons;
 
 		var a = document.createElement("button");
 		a.type="button";
-		a.innerText = `Pièce ${nbBoutons}   `;
+		a.innerText = `Pièce ${id_count}   `;
 		a.className = "btn btn-primary piece";
-		a.id = `piece${nbBoutons}`;
+		a.id = `piece${id_count}`;
 
 		var prec = document.getElementById("buttons");
 
@@ -269,7 +388,7 @@ $('#add-tab').click(function(){
 
 		var icon = document.createElement('i');
 		icon.className = "fas fa-times";
-		icon.id = `delete${currentNum}`;
+		icon.id = `delete${id_count}`;
 
 
 		a.appendChild(icon);
@@ -280,6 +399,9 @@ $('#add-tab').click(function(){
 });
 
 $(document).on('click', "[id*='delete']", function(event){
+	currentButton = document.getElementsByClassName(`btn-primary`)[0];
+	currentNum = currentButton.id.replace(/[^0-9]/g,'');
+
 	event.stopPropagation();
 	var id = $(this).attr('id');
 	nbBoutons-=1;
@@ -301,29 +423,59 @@ $(document).on('click', "[id*='delete']", function(event){
 	details[numDeleted] = undefined;
 	categ[numDeleted] = undefined;
 
+	phase[numDeleted] = undefined;
+
+	ref_mot[numDeleted] = undefined;
+
+	
 
 	if (numDeleted == currentNum){
-		currentNum-=1;
-		currentButton = document.getElementById(`piece${currentNum}`);
+		currentButton = null;
+		while (currentButton === null){
+			currentNum-=1;
+			currentButton = document.getElementById(`piece${currentNum}`);
+		}
 		currentButton.className = "btn btn-primary piece";
 
 		var link = document.getElementsByClassName(`tabs`);
+		var phaseElement = document.getElementsByClassName(`phase`)[0];
 
+		var moteurElement = document.getElementById("moteur");
 
 		link[0].value=immat[currentNum];
-		link[1].value=marque[currentNum];
-	    link[2].value=modele[currentNum];
 		link[3].value=libelle[currentNum];
 		link[4].value=num[currentNum];
 		link[5].value=energie[currentNum];
 		link[6].value=details[currentNum];
 		link[7].value=categ[currentNum];
+
+		moteurElement.value = ref_mot[currentNum];
+	}
+
+	if (marque[currentNum] === ''){
+			resetSelectFields()
+		}
+	else if(modele[currentNum] === ''){
+			$('#modele').empty().append(new Option("Select Modele", "", true, true));
+    		$('#phase').empty().append(new Option("Select Phase", "", true, true));
+		}
+	else if (phase[currentNum] === ''){
+    		$('#phase').empty().append(new Option("Select Phase", "", true, true));
+		}
+	else {
+		$('#marque').val(marque[currentNum]).change()
+		$('#modele').val(modele[currentNum]).change()
+		phaseElement.value = phase[currentNum]
 	}
 });
 
 $(document).on('click', "[id*='piece']", function(){
+	currentButton = document.getElementsByClassName(`btn-primary`)[0];
+	currentNum = currentButton.id.replace(/[^0-9]/g,'');
 	var id = $(this).attr('id');
 	var link = document.getElementsByClassName(`tabs`);
+	var phaseElement = document.getElementsByClassName(`phase`)[0];
+	var moteurElement = document.getElementById("moteur");
 		immat[currentNum] = link[0].value;
 		marque[currentNum] = link[1].value;
 		modele[currentNum] = link[2].value;
@@ -333,7 +485,10 @@ $(document).on('click', "[id*='piece']", function(){
 		details[currentNum] = link[6].value;
 		categ[currentNum] = link[7].value;
 
-		currentButton = document.getElementById(`piece${currentNum}`);
+		ref_mot[currentNum] = moteurElement.value;
+
+		phase[currentNum] = phaseElement.value;
+
 		currentButton.className = "btn btn-custom piece";
 
 
@@ -342,19 +497,39 @@ $(document).on('click', "[id*='piece']", function(){
 		this.className = "btn btn-primary piece";
 
 
+		if (marque[currentNum] === ''){
+			resetSelectFields()
+		}
+		if (modele[currentNum] === ''){
+			$('#modele').empty().append(new Option("Select Modele", "", true, true));
+    		$('#phase').empty().append(new Option("Select Phase", "", true, true));
+		}
+		if (phase[currentNum] === ''){
+    		$('#phase').empty().append(new Option("Select Phase", "", true, true));
+		}
+
 		link[0].value=immat[currentNum];
-		link[1].value=marque[currentNum];
+		$('#marque').val(marque[currentNum]).change()
+		$('#modele').val(modele[currentNum]).change()
 	    link[2].value=modele[currentNum];
 		link[3].value=libelle[currentNum];
 		link[4].value=num[currentNum];
 		link[5].value=energie[currentNum];
 		link[6].value=details[currentNum];
 		link[7].value=categ[currentNum];
+
+		moteurElement.value = ref_mot[currentNum];
+
+		phaseElement.value = phase[currentNum];
 });
 
 function submitForm() {
+	currentButton = document.getElementsByClassName(`btn-primary`)[0];
+	currentNum = currentButton.id.replace(/[^0-9]/g,'');
 
 	var link = document.getElementsByClassName(`tabs`);
+	var phaseElement = document.getElementsByClassName(`phase`)[0];
+	var moteurElement = document.getElementById("moteur");
 		immat[currentNum] = link[0].value;
 		marque[currentNum] = link[1].value;
 		modele[currentNum] = link[2].value;
@@ -364,10 +539,14 @@ function submitForm() {
 		details[currentNum] = link[6].value;
 		categ[currentNum] = link[7].value;
 
+		ref_mot[currentNum] = moteurElement.value;
+
+		phase[currentNum] = phaseElement.value;
+
 	let typeClientValue = document.getElementById('type_client').value;
 let prenomValue = document.getElementById('prenom').value;
 let nomValue = document.getElementById('nom').value;
-let telValue = document.getElementById('tel').value;
+let telValue = "+33" + document.getElementById('tel').value;
 
 let employeeValue = document.getElementById('employeeSelect').value;
 let codepostalValue = document.getElementById('codePostal').value;
@@ -383,10 +562,12 @@ let codepostalValue = document.getElementById('codePostal').value;
 		"modele" : modele,
 		"libelle" : libelle,
 		"numero" : num,
+		"ref_mot": ref_mot,
 		"energie" : energie,
 		"category" : categ,
 		"details" : details,
-		"employee" : employeeValue
+		"employee" : employeeValue,
+		"phase" : phase
 	}
 
 	var json = JSON.stringify(dict);
@@ -408,9 +589,11 @@ let codepostalValue = document.getElementById('codePostal').value;
     }).catch(function() {
         // Handle the error here
     });
+	clearFields()
 
 	//event.preventDefault();
     document.getElementById("myForm").submit(); // make sure to replace "myForm" with the actual id of your form
+
 }
 	</script>
 </body>

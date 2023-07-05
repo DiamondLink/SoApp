@@ -1,4 +1,4 @@
-from flask import Flask, request, redirect, url_for, session, Markup
+from flask import Flask, request, redirect, url_for, session, Markup, jsonify
 from flask.templating import render_template
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate, migrate
@@ -25,6 +25,7 @@ from markupsafe import Markup
 from flask_admin import expose
 from sqlalchemy.orm import joinedload
 import pytz
+from sqlalchemy.ext.hybrid import hybrid_property
 
 
 
@@ -36,9 +37,10 @@ app.debug = True
 app.config['SECRET_KEY'] = 'votre-clé-secrète'
 app.config['BABEL_DEFAULT_LOCALE'] = 'fr'
 
+db_path = 'C:\\Users\\Baptiste\\Downloads\\app_db.db'
 
 # adding configuration for using a sqlite database
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///C:\\Users\\Baptiste\\Downloads\\app_db.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///{}'.format(db_path)
  
 # Creating an SQLAlchemy instance
 db = SQLAlchemy(app)
@@ -81,8 +83,10 @@ class Piece(db.Model):
     immat = db.Column(db.String(100))
     marque = db.Column(db.String(100))
     modele = db.Column(db.String(100))
+    phase = db.Column(db.String(100))
     libelle = db.Column(db.String(100))
     numero = db.Column(db.String(100))
+    ref_mot = db.Column(db.String(100))
     energie = db.Column(db.String(100))
     details = db.Column(db.String(100))
     etat = db.Column(db.String(100))
@@ -92,6 +96,10 @@ class Piece(db.Model):
     @property
     def user(self):
         return self.ticket.user
+
+    @hybrid_property
+    def ticket_status(self):
+        return self.ticket.status
 
 class Employee(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -112,7 +120,7 @@ class Employee(db.Model):
 
 class TicketForm(FlaskForm):
     # Informations sur le client
-    type_client = SelectField('Type de Client', choices=[('individuel', 'Individuel'), ('professionel', 'Professionnel')], validators=[DataRequired()], render_kw={"placeholder": "Type Client"})
+    type_client = SelectField('Type de Client', choices=[('particulier', 'Particulier'), ('professionnel', 'Professionnel')], validators=[DataRequired()], render_kw={"placeholder": "Type Client"})
 
 
     prenom = StringField('Prénom', validators=[DataRequired()])
@@ -120,12 +128,14 @@ class TicketForm(FlaskForm):
     tel = StringField('Téléphone', validators=[DataRequired()])
     
     # Informations sur la pièce automobile
-    immat = StringField("Immatriculation", validators=[DataRequired()])
-    marque = StringField('Marque', validators=[DataRequired()])
-    modele = StringField("Modèle", validators=[DataRequired()])
-    libelle = StringField('Libellé', validators=[DataRequired()])
-    code_constr_moteur = StringField('N° Fabriquant/Moteur', validators=[DataRequired()])
-    energie = StringField('Énergie')
+    immat = StringField("Immatriculation")
+    marque = StringField('Marque')
+    modele = StringField("Modèle")
+    libelle = StringField('Libellé')
+    code_constr_moteur = StringField('Ref Constructeur')
+
+    def validate_energie(form, field):
+        pass
 
     submit = SubmitField('Soumettre le Billet')
 
@@ -164,7 +174,10 @@ def add_employee():
 @app.route('/ticket', methods=['GET', 'POST'])
 def submit_ticket():
     #add_categories()
+    #add_employee()
 
+    with open("modeles.json") as f:
+        data = json.load(f)
 
     form = TicketForm()
 
@@ -172,7 +185,7 @@ def submit_ticket():
 
     if form.validate_on_submit():
 
-        return redirect(url_for('submit_ticket'))
+        return redirect(url_for('liste'))
     else:
         print(form.errors)
 
@@ -180,7 +193,7 @@ def submit_ticket():
     categories = Category.query.all()
     employee = Employee.query.all()
 
-    return render_template('add_profile.html', form=form, category = categories, employee = employee)
+    return render_template('add_profile.html', form=form, category = categories, employee = employee, data=data)
 
 
 @app.route('/get_data', methods=['POST'])
@@ -212,7 +225,7 @@ def get_data():
         try:
             category = Category.query.filter_by(category_name=data['category'][i]).first()
             employee = Employee.query.filter_by(nom=data["employee"]).first()
-            new_pieces.append(Piece(ouvert_par = employee.id, ticket_id=new_ticket.id, category_id = category.id, immat = data["immat"][i], marque = data["marque"][i], modele = data["modele"][i], libelle = data["libelle"][i], numero = data["numero"][i], energie = data["energie"][i], etat = "En attente de traitement", details = data["details"][i], prix = "A définir"))
+            new_pieces.append(Piece(ouvert_par = employee.id, ticket_id=new_ticket.id, category_id = category.id, immat = data["immat"][i], marque = data["marque"][i], modele = data["modele"][i], libelle = data["libelle"][i], numero = data["numero"][i], energie = data["energie"][i], etat = "En attente de traitement", details = data["details"][i], prix = "A définir", phase = data["phase"][i]))
         except Exception as e:
             print("Error: ", str(e))
 
@@ -288,7 +301,13 @@ class UserAdmin(ModelView):
         return ''
 
     column_formatters = {
-        'pieces': _user_formatter,
+        'pieces': _user_formatter
+    }
+
+    column_labels = {
+        'prenom' : "Prénom / Société",
+        'nom' : "Nom / Contact (Entreprise)"
+
     }
 
 #Ticket
@@ -336,6 +355,7 @@ class PieceAdmin(ModelView):
         filters.FilterEqual(column=Piece.details, name='Details'),
         filters.FilterEqual(column=Piece.etat, name='Etat'),
         filters.FilterEqual(column=Piece.prix, name='Prix'),
+        filters.FilterEqual(column=Piece.ref_mot, name='ref_mot'),
     )
 
     column_formatters = dict(
@@ -344,12 +364,15 @@ class PieceAdmin(ModelView):
         gere_par= lambda v, c, m, p: m.gere_employee.nom if m.gere_employee else ''
     )
 
-    column_list = ('immat', 'marque', 'modele', 'libelle', 'numero', 'energie', 'details', 'etat', 'prix', 'user', "ouvert_par", "gere_par")
+    column_list = ('immat', 'marque', 'modele', 'phase', 'libelle', 'numero', 'ref_mot', 'energie', 'details', 'etat', 'prix', 'user', "ouvert_par", "gere_par", 'ticket_status')
 
     column_labels = {
         'user': 'Client', 
         'ouvert_par' : 'Crée par',
-        'gere_par' : "Géré par"
+        'gere_par' : "Géré par",
+        'ticket_status' : "Status du ticket",
+        'numero' : "Ref Constructeur",
+        'ref_mot' : "Ref Moteur"
     }
 
 
@@ -357,7 +380,14 @@ class PieceAdmin(ModelView):
 
 
 
+def is_table_empty(table_name):
+    with app.app_context():
+        return db.session.query(table_name).count() == 0
 
+if (is_table_empty(Category)):
+    add_categories()
+if (is_table_empty(Employee)):
+    add_employee()
 
 
 admin = Admin(app, name='Base de donnée', template_mode='bootstrap3')

@@ -22,17 +22,37 @@
     padding: 10px;
     margin: 10px;
 
-
-
-
-
 }
 
   </style>
 </head>
 <body>
+  <nav class="navbar navbar-expand-lg navbar-light bg-light">
+		<a class="navbar-brand" href="menu">
+			<img width=200 src="static/soa.png" alt="Logo">
+		</a>
+		<button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+		  <span class="navbar-toggler-icon"></span>
+		</button>
+		<div class="collapse navbar-collapse" id="navbarNav">
+		  <ul class="navbar-nav">
+			<li class="nav-item active">
+			  <a class="nav-link" href="menu">Menu</a>
+			</li>
+			<li class="nav-item">
+			  <a class="nav-link" href="liste">Liste</a>
+			</li>
+			<li class="nav-item">
+			  <a class="nav-link" href="ticket">Crée un ticket</a>
+			</li>
+			<li class="nav-item">
+				<a class="nav-link" href="admin" target="_blank" onclick="openInNewTab(event)">Database</a>
+			</li>
+		  </ul>
+		</div>
+	  </nav>
+
   <div class="container">
-    <h1 class="my-4">Gestion des Tickets</h1>
     
     <ul class="nav nav-tabs">
       <li class="nav-item">
@@ -73,15 +93,14 @@
   <div class="card-header" id="heading{{ ticket.id }}" data-toggle="collapse" data-target="#collapse{{ ticket.id }}" aria-expanded="false" aria-controls="collapse{{ ticket.id }}" style="cursor: pointer;">
     <h5 class="mb-0">Ticket #{{ ticket.id }}: {% for piece in ticket.pieces %}{% set ns2.nom_employee = piece.ouvert_employee.nom %}<span class="badge" style="background-color: {{ piece.category.color }}; color:white;">{{ piece.libelle }}</span>&nbsp;{% endfor %}</h5>
     <hr>
-    <p class="mb-1" style=""><span style="font-weight: 700;">Téléphone:</span> {{ ticket.user.tel }}   &nbsp;&nbsp;<span style="font-weight: 700;">Statut:</span> {{ ticket.status }}   &nbsp;&nbsp;<span style="font-weight: 700;">Date:</span> {{ticket.created_at.strftime("%Y-%m-%d %H:%M") }} &nbsp;&nbsp;  <span style="font-weight: 700;">Crée par</span> {{ns2.nom_employee}}</p>
+    <p class="mb-1" style=""><span style="font-weight: 700;">Téléphone:</span> {{ ticket.user.tel }}   &nbsp;&nbsp;<span style="font-weight: 700;">Statut:</span> <span id="ticketStatus">{{ ticket.status }}</span>   &nbsp;&nbsp;<span style="font-weight: 700;">Date:</span> {{ticket.created_at.strftime("%Y-%m-%d %H:%M") }} &nbsp;&nbsp;  <span style="font-weight: 700;">Crée par</span> {{ns2.nom_employee}}</p>
   </div>
 
   <div id="collapse{{ ticket.id }}" class="collapse" aria-labelledby="heading{{ ticket.id }}" data-parent="#accordion">
     <div class="card-body">
       <span class="badge" style="color: black; border: 1px solid black; font-size: 1em; font-weight: 400;">Prenom: {{ticket.user.prenom}}</span>&nbsp;
-      <span class="badge" style="color: black; border: 1px solid black; font-size: 1em; font-weight: 400;"> Nom: {{ticket.user.prenom}}</span>&nbsp;
-      <span class="badge" style="color: black; border: 1px solid black; font-size: 1em; font-weight: 400;">Type de client: {{ticket.user.prenom}}</span>
-      &emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;
+      <span class="badge" style="color: black; border: 1px solid black; font-size: 1em; font-weight: 400;"> Nom: {{ticket.user.nom}}</span>&nbsp;
+      &emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;
       <button type="button" class="btn btn-success" onclick="terminer(this)" id="#{{ticket.id}}">
         Terminer le ticket
       </button><br>
@@ -99,36 +118,38 @@
         Edit
       </button><br><br>
       
-      {% set etats = ['En attente de traitement', 'Disponible', 'Disponible à démonter', 'Indisponible'] %}
-
-      <select id="etatPiece_{{ piece.id }}_{{ ticket.id }}" style="background-color: white;" class="form-control selectClass">
-      {% for etat in etats %}
-          {% if piece.etat == etat %}
-              <option selected>{{ etat }}</option>
-          {% else %}
-              <option>{{ etat }}</option>
-          {% endif %}
-      {% endfor %}
-      </select><br>
-
-
-      <label for="exampleInput">Géré par:</label>
-
-      <select class="form-control" id="employeePiece_{{ piece.id }}_{{ ticket.id }}" style="background-color: white;">
-        <option selected disabled value="">Choisir un employé...</option>
-        {% for emp in employee %}
-          {% if piece.gere_par == emp.id %}
-            <option value="{{emp.id}}" selected>{{ emp.nom }}</option>
-          {% else %}
-            <option value="{{emp.id}}">{{ emp.nom }}</option>
-          {% endif %}
-        {% endfor %}
-</select>
-
-      
-
+      <div class="row">
+        <div class="col">
+            {% set etats = ['En attente de traitement', 'Disponible', 'Disponible à démonter', 'Disponible confrère', 'Indisponible'] %}
+            <label for="exampleInput">État :</label>
+            <select id="etatPiece_{{ piece.id }}_{{ ticket.id }}" class="form-control selectClass">
+            {% for etat in etats %}
+                {% if piece.etat == etat %}
+                    <option selected>{{ etat }}</option>
+                {% else %}
+                    <option>{{ etat }}</option>
+                {% endif %}
+            {% endfor %}
+            </select>
+        </div>
     
-      
+        <div class="col">
+            <label for="exampleInput">Géré par :</label>
+            <select class="form-control" id="employeePiece_{{ piece.id }}_{{ ticket.id }}">
+                <option selected disabled value="">Choisir un employé...</option>
+                {% for emp in employee %}
+                    {% if piece.gere_par == emp.id %}
+                        <option value="{{emp.id}}" selected>{{ emp.nom }}</option>
+                    {% else %}
+                        <option value="{{emp.id}}">{{ emp.nom }}</option>
+                    {% endif %}
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+    <br>
+
+    <div class="addDiv{{ piece.id }}"></div>
       
       {% endfor %}
 
@@ -149,15 +170,64 @@
 
 <script>
 
+function dispChange(selectedEtat, id) {
+  var parts = id.split('_');
+var pieceID = parseInt(parts[1]);
+
+
+var divToRemove = document.getElementById(`dispDiv${pieceID}`)
+if (divToRemove){
+  divToRemove.remove();
+}
+  // Select the div with a specific class
+// Replace '.specific-class' with the actual class name you are looking for
+var specificDiv = document.querySelector(`.addDiv${pieceID}`);
+
+// Create the outer div
+var dispDiv = document.createElement('div');
+dispDiv.setAttribute('id', `dispDiv${pieceID}`);
+
+var labelText;
+if (selectedEtat == 'Disponible'){
+  labelText = 'Ref Piece Opisto :'
+} else if (selectedEtat == 'Disponible à démonter'){
+  labelText = 'LP :'
+} else if (selectedEtat == 'Disponible confrère'){
+  labelText = 'N° Pièce :'
+} else{
+  labelText = 'skip';
+}
+// Create the label
+var dispLabel = document.createElement('label');
+dispLabel.setAttribute('id', 'dispLabel');
+dispLabel.textContent = labelText;
+
+// Create the input
+var dispInput = document.createElement('input');
+dispInput.setAttribute('type', 'text');
+dispInput.setAttribute('class', 'col-sm-4 form-control');
+dispInput.setAttribute('id', 'dispInput');
+dispInput.setAttribute('placeholder', '');
+
+// Append the label and input to the outer div
+dispDiv.appendChild(dispLabel);
+dispDiv.appendChild(dispInput);
+
+// Append the outer div to the specific div
+if (labelText != 'skip'){
+specificDiv.appendChild(dispDiv);}
+//specificDiv.append(dispLabel)
+
+
+}
+
+
 $(document).ready(function() {
     $("select[id*='employeePiece']").change(function() {
-      alert(1);
-      alert($(this).attr('id'));
         var dict = {
           "gere_par" : $(this).val()
         }
         let id = parseInt($(this).attr('id').split('_')[1], 10);
-        alert(id);
 
         fetch('/update/Piece/' + id, {
     method: 'POST',
@@ -267,6 +337,9 @@ var dataPiece= {
     "status" : "En cours"
   }
 
+  var statusText = document.getElementById("ticketStatus");
+  statusText.textContent = "En cours"
+
 
 
   var span = document.createElement("span");
@@ -326,6 +399,16 @@ fetch('/update/Piece/' + pieceId, {
   }
 
   window.onload = function() {
+    var selectEtats = document.querySelectorAll('[id*="etatPiece"]');
+
+  selectEtats.forEach(function(selectElement) {
+    selectElement.addEventListener("change", function(event) {
+      var selectedEtat = event.target.value; // get the selected etat
+      // call your function here
+      dispChange(selectedEtat, event.target.id);
+    });
+  });
+
   var selects = document.getElementsByClassName('selectClass');
   for(var i=0; i<selects.length; i++){
     selects[i].addEventListener("change", function() {
@@ -341,6 +424,9 @@ fetch('/update/Piece/' + pieceId, {
 let dataTicket = {
     "status" : "En cours"
 };
+
+var statusText = document.getElementById("ticketStatus");
+  statusText.textContent = "En cours"
 
 let pieceId = match[1];
 let ticketId = match[2];
