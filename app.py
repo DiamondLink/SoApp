@@ -14,7 +14,7 @@ from sqlalchemy import or_, and_
 from flask import Flask, request, jsonify
 import time
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 from sqlalchemy.orm import relationship
 from flask_admin import Admin
 from flask_admin.contrib.sqla import ModelView
@@ -26,6 +26,9 @@ from flask_admin import expose
 from sqlalchemy.orm import joinedload
 import pytz
 from sqlalchemy.ext.hybrid import hybrid_property
+from waitress import serve
+import apsw
+
 
 
 
@@ -38,9 +41,13 @@ app.config['SECRET_KEY'] = 'votre-clé-secrète'
 app.config['BABEL_DEFAULT_LOCALE'] = 'fr'
 
 db_path = 'C:\\Users\\Baptiste\\Downloads\\app_db.db'
+archive_path = 'C:\\Users\\Baptiste\\Downloads\\archive_db.db'
 
 # adding configuration for using a sqlite database
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///{}'.format(db_path)
+
+
+
  
 # Creating an SQLAlchemy instance
 db = SQLAlchemy(app)
@@ -52,6 +59,7 @@ migrate = Migrate(app, db)
 # Models
 
 class User(db.Model):
+    __tablename__ = 'user'
     id = db.Column(db.Integer, primary_key=True)
     type_client = db.Column(db.String(50))
     prenom = db.Column(db.String(100))
@@ -59,9 +67,11 @@ class User(db.Model):
     tel = db.Column(db.String(100))
     tickets = relationship('Ticket', backref='user')
     code_postal = db.Column(db.Integer)
+    created_at = db.Column(db.DateTime, default=datetime.now(pytz.timezone('Europe/Paris')))
 
 
 class Ticket(db.Model):
+    __tablename__ = 'ticket'
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     status = db.Column(db.String(100))
@@ -77,6 +87,7 @@ class Category(db.Model):
     color = db.Column(db.String(100))
 
 class Piece(db.Model):
+    __tablename__ = 'piece'
     id = db.Column(db.Integer, primary_key=True)
     ticket_id = db.Column(db.Integer, db.ForeignKey('ticket.id'))
     category_id = db.Column(db.Integer, db.ForeignKey('category.id'))
@@ -93,6 +104,7 @@ class Piece(db.Model):
     prix = db.Column(db.String(100))
     ouvert_par = db.Column(db.Integer, db.ForeignKey('employee.id'))
     gere_par = db.Column(db.Integer, db.ForeignKey('employee.id'))
+    created_at = db.Column(db.DateTime, default=datetime.now(pytz.timezone('Europe/Paris')))
     @property
     def user(self):
         return self.ticket.user
@@ -109,7 +121,70 @@ class Employee(db.Model):
     gere_pieces = relationship('Piece', backref='gere_employee', foreign_keys=[Piece.gere_par])
 
 
+@app.route('/archive')
+def backup_database():
+    # Connect to the Flask database
+    connection = apsw.Connection(db_path)
+    cursor = connection.cursor()
 
+    # Get the current timestamp
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+
+    # Create the backup file name
+    backup_file = f'backup_{timestamp}.db'
+
+    # Execute the backup SQL command
+    cursor.execute(f'ATTACH DATABASE "{backup_file}" AS backup_db')
+    cursor.execute('BEGIN')
+    cursor.execute('SELECT name FROM sqlite_master WHERE type="table"')
+    tables = cursor.fetchall()
+    for table in tables:
+        cursor.execute(f'SELECT * FROM {table[0]}')
+        rows = cursor.fetchall()
+        columns = cursor.getdescription()
+
+        create_table_query = f'CREATE TABLE backup_db.{table[0]}('
+        for column in columns:
+            create_table_query += f'{column[0]} {column[1]}, '
+        create_table_query = create_table_query[:-2] + ')'
+
+        cursor.execute(create_table_query)
+        cursor.executemany(f'INSERT INTO backup_db.{table[0]} VALUES ({",".join(["?"] * len(columns))})', rows)
+
+    cursor.execute('COMMIT')
+
+    # Close the database connection
+    connection.close()
+
+@app.route('/archive_old_data')
+def archive_old_data():
+    six_months_ago = datetime.now() - timedelta(seconds = 5)
+    tables = [User, Ticket, Piece]  # list your table models here
+
+    for table in tables:
+        # Select rows older than six months
+        rows = table.query.filter(table.created_at < six_months_ago).all()
+
+        if rows:
+            # Add rows to the archive database and remove them from the main database
+            for row in rows:
+                db.session.execute(f"INSERT INTO {table.__tablename__} SELECT * FROM main.{table.__tablename__} WHERE id = :id", params={'id': row.id})
+                db.session.delete(row)
+
+            db.session.commit()
+
+    return 'Data archived'
+
+
+@app.route('/delete_all_data_main_db_0335')
+def delete_all_data_main_db():
+    with app.app_context():
+        # Reflect all tables in the database
+        meta = db.metadata
+        for table in reversed(meta.sorted_tables):
+            db.session.execute(table.delete())
+        db.session.commit()
+    return 'All data from the main database has been deleted.'
 
 
 
@@ -236,6 +311,8 @@ def get_data():
 
     db.session.commit()
 
+    time.sleep(0.5)
+
     # You can return a response
     return json.dumps({'success':True}), 200, {'ContentType':'application/json'}
 
@@ -296,7 +373,7 @@ class UserAdmin(ModelView):
             markup_links = []
             for ticket in model.tickets:
                 for piece in ticket.pieces:
-                    markup_links.append(Markup('<a href="{}">{}</a>'.format(url_for('piece.edit_view', id=piece.id), piece.libelle)))
+                    markup_links.append(Markup('<a href="{}">{}</a>'.format(url_for('admin_pieces.edit_view', id=piece.id), piece.libelle)))
             return Markup(", ".join(markup_links))
         return ''
 
@@ -328,8 +405,8 @@ class TicketAdmin(ModelView):
     )
 
     column_formatters = dict(
-        user=lambda v, c, m, p: Markup(f'<a href="{get_url("user.edit_view", id=m.user.id)}">{m.user.nom}</a>') if m.user else '',
-        pieces=lambda v, c, m, p: Markup(', '.join([f'<a href="{get_url("piece.edit_view", id=piece.id)}">{piece.libelle}</a>' for piece in m.pieces])),
+        user=lambda v, c, m, p: Markup(f'<a href="{get_url("admin_clients.edit_view", id=m.user.id)}">{m.user.nom}</a>') if m.user else '',
+        pieces=lambda v, c, m, p: Markup(', '.join([f'<a href="{get_url("admin_pieces.edit_view", id=piece.id)}">{piece.libelle}</a>' for piece in m.pieces])),
         created_at=lambda v, c, m, p: m.created_at.strftime("%Y-%m-%d à %H:%M") if m.created_at else ''
     )
 
@@ -345,6 +422,8 @@ class TicketAdmin(ModelView):
 
 #Piece
 class PieceAdmin(ModelView):
+    can_edit = False
+
     column_filters = (
         filters.FilterEqual(column=Piece.immat, name='Immat'),
         filters.FilterEqual(column=Piece.marque, name='Marque'),
@@ -359,7 +438,7 @@ class PieceAdmin(ModelView):
     )
 
     column_formatters = dict(
-        user=lambda v, c, m, p: Markup(f'<a href="{get_url("user.edit_view", id=m.user.id)}">{m.user.nom} {m.user.prenom}</a>') if m.user else '',
+        user=lambda v, c, m, p: Markup(f'<a href="{get_url("admin_clients.edit_view", id=m.user.id)}">{m.user.nom} {m.user.prenom}</a>') if m.user else '',
         ouvert_par= lambda v, c, m, p: m.ouvert_employee.nom if m.ouvert_employee else '',
         gere_par= lambda v, c, m, p: m.gere_employee.nom if m.gere_employee else ''
     )
@@ -384,17 +463,169 @@ def is_table_empty(table_name):
     with app.app_context():
         return db.session.query(table_name).count() == 0
 
-if (is_table_empty(Category)):
-    add_categories()
-if (is_table_empty(Employee)):
-    add_employee()
+
+#add_categories()
+#add_employee()
 
 
-admin = Admin(app, name='Base de donnée', template_mode='bootstrap3')
+admin = Admin(app, name='Base de donnée [Administrateur]', template_mode='bootstrap3', url='/admin-db', endpoint='admin_db')
 babel.init_app(app, locale_selector=lambda : 'fr')
 
-admin.add_view(UserAdmin(User, db.session, name='Clients'))  # give the view a unique name
-admin.add_view(TicketAdmin(Ticket, db.session, name='Tickets'))
-admin.add_view(PieceAdmin(Piece, db.session, name='Pièces'))
-admin.add_view(ModelView(Category, db.session, name='Catégories'))
-admin.add_view(ModelView(Employee, db.session, name='Employés'))
+admin.add_view(UserAdmin(User, db.session, name='Clients', endpoint='admin_clients'))  # give the view a unique name
+admin.add_view(TicketAdmin(Ticket, db.session, name='Tickets', endpoint='admin_tickets'))
+admin.add_view(PieceAdmin(Piece, db.session, name='Pièces', endpoint='admin_pieces'))
+admin.add_view(ModelView(Category, db.session, name='Catégories', endpoint='admin_categories'))
+admin.add_view(ModelView(Employee, db.session, name='Employés', endpoint='admin_employees'))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class UserAdmin2(ModelView):
+    can_edit = False
+    can_create = False
+    can_delete = False
+
+    column_filters = [
+        'prenom',
+        'nom',
+        'type_client',
+        'tel',
+        'code_postal',
+        filters.FilterLike(User.nom, 'Nom commence par'),
+    ]
+
+    column_list = ('prenom', 'nom', 'type_client', 'tel', 'code_postal', 'pieces')
+
+    def _user_formatter(view, context, model, name):
+        if model.tickets:
+            markup_links = []
+            for ticket in model.tickets:
+                for piece in ticket.pieces:
+                    markup_links.append(Markup('<a href="{}">{}</a>'.format(url_for('user_pieces.edit_view', id=piece.id), piece.libelle)))
+            return Markup(", ".join(markup_links))
+        return ''
+
+    column_formatters = {
+        'pieces': _user_formatter
+    }
+
+    column_labels = {
+        'prenom' : "Prénom / Société",
+        'nom' : "Nom / Contact (Entreprise)"
+
+    }
+
+
+
+class TicketAdmin2(ModelView):
+    can_edit = False
+    can_create = False
+    can_delete = False
+
+    column_filters = (
+        FilterStatus(column=Ticket.status, name='Status'),
+        filters.DateBetweenFilter(column=Ticket.created_at, name='Created At')
+    )
+
+    column_formatters = dict(
+        user=lambda v, c, m, p: Markup(f'<a href="{get_url("user_clients.edit_view", id=m.user.id)}">{m.user.nom}</a>') if m.user else '',
+        pieces=lambda v, c, m, p: Markup(', '.join([f'<a href="{get_url("user_pieces.edit_view", id=piece.id)}">{piece.libelle}</a>' for piece in m.pieces])),
+        created_at=lambda v, c, m, p: m.created_at.strftime("%Y-%m-%d à %H:%M") if m.created_at else ''
+    )
+
+    column_list = ['id', 'status', 'created_at', 'user', 'pieces']
+
+    column_labels = {
+        'id': 'N° Ticket',
+        'created_at' : 'Date de création',
+        'user' : 'Client',
+        'pieces' :  'Pièces'
+    }
+
+
+#Piece
+class PieceAdmin2(ModelView):
+    can_edit = False
+    can_create = False
+    can_delete = False
+
+    column_filters = (
+        filters.FilterEqual(column=Piece.immat, name='Immat'),
+        filters.FilterEqual(column=Piece.marque, name='Marque'),
+        filters.FilterEqual(column=Piece.modele, name='Modele'),
+        filters.FilterEqual(column=Piece.libelle, name='Libelle'),
+        filters.FilterEqual(column=Piece.numero, name='Numero'),
+        filters.FilterEqual(column=Piece.energie, name='Energie'),
+        filters.FilterEqual(column=Piece.details, name='Details'),
+        filters.FilterEqual(column=Piece.etat, name='Etat'),
+        filters.FilterEqual(column=Piece.prix, name='Prix'),
+        filters.FilterEqual(column=Piece.ref_mot, name='ref_mot'),
+    )
+
+    column_formatters = dict(
+        user=lambda v, c, m, p: Markup(f'<a href="{get_url("user_clients.edit_view", id=m.user.id)}">{m.user.nom} {m.user.prenom}</a>') if m.user else '',
+        ouvert_par= lambda v, c, m, p: m.ouvert_employee.nom if m.ouvert_employee else '',
+        gere_par= lambda v, c, m, p: m.gere_employee.nom if m.gere_employee else ''
+    )
+
+    column_list = ('immat', 'marque', 'modele', 'phase', 'libelle', 'numero', 'ref_mot', 'energie', 'details', 'etat', 'prix', 'user', "ouvert_par", "gere_par", 'ticket_status')
+
+    column_labels = {
+        'user': 'Client', 
+        'ouvert_par' : 'Crée par',
+        'gere_par' : "Géré par",
+        'ticket_status' : "Status du ticket",
+        'numero' : "Ref Constructeur",
+        'ref_mot' : "Ref Moteur"
+    }
+
+class ReadOnlyModelView(ModelView):
+    can_edit = False
+    can_delete = False
+    can_create = False
+
+
+
+admin2 = Admin(app, name='Base de donnée', template_mode='bootstrap3', url='/user-db', endpoint='user_db')
+
+admin2.add_view(UserAdmin2(User, db.session, name='Clients', endpoint='user_clients'))  # give the view a unique name
+admin2.add_view(TicketAdmin2(Ticket, db.session, name='Tickets', endpoint='user_tickets'))
+admin2.add_view(PieceAdmin2(Piece, db.session, name='Pièces', endpoint='user_pieces'))
+admin2.add_view(ReadOnlyModelView(Category, db.session, name='Catégories', endpoint='user_categories'))
+admin2.add_view(ReadOnlyModelView(Employee, db.session, name='Employés', endpoint='user_employees'))
+
+
+if __name__ == '__main__':
+    serve(app, host='0.0.0.0', port=5000)
+

@@ -46,7 +46,7 @@
 			  <a class="nav-link" href="ticket">Crée un ticket</a>
 			</li>
 			<li class="nav-item">
-				<a class="nav-link" href="admin" target="_blank" onclick="openInNewTab(event)">Database</a>
+				<a class="nav-link" href="user-db" target="_blank" onclick="openInNewTab(event)">Database</a>
 			</li>
 		  </ul>
 		</div>
@@ -523,6 +523,7 @@ $(document).on('click', "[id*='piece']", function(){
 		phaseElement.value = phase[currentNum];
 });
 
+
 function submitForm() {
 	currentButton = document.getElementsByClassName(`btn-primary`)[0];
 	currentNum = currentButton.id.replace(/[^0-9]/g,'');
@@ -592,6 +593,7 @@ let codepostalValue = document.getElementById('codePostal').value;
 	clearFields()
 
 	//event.preventDefault();
+
     document.getElementById("myForm").submit(); // make sure to replace "myForm" with the actual id of your form
 
 }
