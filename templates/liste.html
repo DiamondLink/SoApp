@@ -91,7 +91,7 @@
     {% set ns2 = namespace(nom_employee='g') %}
 <div class="card mb-1 ticketItem" style="border-color: {{ns.first_piece_color}};">
   <div class="card-header" id="heading{{ ticket.id }}" data-toggle="collapse" data-target="#collapse{{ ticket.id }}" aria-expanded="false" aria-controls="collapse{{ ticket.id }}" style="cursor: pointer;">
-    <h5 class="mb-0">Ticket #{{ ticket.id }}: {% for piece in ticket.pieces %}{% set ns2.nom_employee = piece.ouvert_employee.nom %}<span class="badge" style="background-color: {{ piece.category.color }}; color:white;">{{ piece.libelle }}</span>&nbsp;{% endfor %}</h5>
+    <h5 class="mb-0">Ticket #{{ ticket.id }}: {% for piece in ticket.pieces %}{% set ns2.nom_employee = piece.ouvert_employee.nom %}<span class="badge" style="background-color: {{ piece.category.color }}; color:white;">{{ piece.libelle }}</span>&nbsp;{% endfor %}<br>{% if ticket.info is not none %}<span class="badge" style="border: 1px solid black; color:black;">{{ ticket.info }}</span>{% endif %}</h5>
     <hr>
     <p class="mb-1" style=""><span style="font-weight: 700;">Téléphone:</span> {{ ticket.user.tel }}   &nbsp;&nbsp;<span style="font-weight: 700;">Statut:</span> <span id="ticketStatus">{{ ticket.status }}</span>   &nbsp;&nbsp;<span style="font-weight: 700;">Date:</span> {{ticket.created_at.strftime("%Y-%m-%d %H:%M") }} &nbsp;&nbsp;  <span style="font-weight: 700;">Crée par</span> {{ns2.nom_employee}}</p>
   </div>
@@ -111,7 +111,8 @@
       <span class="badge" style="color: black; border: 1px solid black; font-size: 1em; font-weight: 400;"> <strong>Immatriculation:</strong> <span class="immat_{{ piece.id }}">{{piece.immat}}</span></span>&nbsp;
       <span class="badge" style="color: black; border: 1px solid black; font-size: 1em; font-weight: 400;"> <strong>Marque:</strong> <span class="marque_{{ piece.id }}">{{piece.marque}}</span></span>&nbsp;
       <span class="badge" style="color: black; border: 1px solid black; font-size: 1em; font-weight: 400;"> <strong>Modèle:</strong> <span class="modele_{{ piece.id }}">{{piece.modele}}</span></span>&nbsp;
-      <span class="badge" style="color: black; border: 1px solid black; font-size: 1em; font-weight: 400;"> <strong>Numéro de fabricant/Moteur::</strong> <span class="num_{{ piece.id }}">{{piece.numero}}</span></span>&nbsp;
+      <span class="badge" style="color: black; border: 1px solid black; font-size: 1em; font-weight: 400;"> <strong>Ref Fabriquant:</strong> <span class="num_{{ piece.id }}">{{piece.numero}}</span></span>&nbsp;
+      <span class="badge" style="color: black; border: 1px solid black; font-size: 1em; font-weight: 400;"> <strong>Ref Moteur:</strong> <span class="mot_{{ piece.id }}">{{piece.ref_mot}}</span></span>&nbsp;
       <span class="badge" style="color: black; border: 1px solid black; font-size: 1em; font-weight: 400;"> <strong>Prix:</strong> <span class="prix_{{ piece.id }}">{{piece.prix}}</span></span>&nbsp;
 
       <button type="button" class="btn btn-warning" onclick="editPiece(this)" id="{{ piece.id }}_{{ ticket.id }}">
@@ -170,9 +171,45 @@
 
 <script>
 
-function dispChange(selectedEtat, id) {
+
+
+    function update_lp(textVal, id){
+  var id = id.replace(/[^0-9]/g,'');
+
+  var dict = {
+    "num_ref_lp" : textVal
+  }
+
+
+  fetch('/update/Piece/' + id, {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(dict)
+}).then(response => {
+    if (!response.ok) {
+        throw new Error("HTTP error " + response.status);
+    }
+})
+
+}
+
+
+  $(document).ready(function(){
+  $(document).on('input', 'input[id*="dispInput"]', function() {
+    update_lp($(this).val(), $(this).attr('id'));
+  });
+});
+
+
+
+
+function dispChange(selectedEtat, id, time) {
   var parts = id.split('_');
 var pieceID = parseInt(parts[1]);
+
+
 
 
 var divToRemove = document.getElementById(`dispDiv${pieceID}`)
@@ -206,8 +243,24 @@ dispLabel.textContent = labelText;
 var dispInput = document.createElement('input');
 dispInput.setAttribute('type', 'text');
 dispInput.setAttribute('class', 'col-sm-4 form-control');
-dispInput.setAttribute('id', 'dispInput');
+dispInput.setAttribute('id', `dispInput${pieceID}`);
 dispInput.setAttribute('placeholder', '');
+
+
+if (time=='load'){
+  var pieces = JSON.parse('{{ pieces | safe }}');
+
+    var piece = pieces.find(function(p) {
+        return p.id === pieceID;
+    });
+
+    if (piece) {
+        var num_ref_lp = piece.num_ref_lp;
+        dispInput.value = num_ref_lp;
+    } else {
+       console.log("not found")
+    }
+}
 
 // Append the label and input to the outer div
 dispDiv.appendChild(dispLabel);
@@ -261,6 +314,7 @@ let ticketId = match[2];
   var p3 = btn.parentElement.querySelector(`.modele_${pieceId}`);
   var p4 = btn.parentElement.querySelector(`.num_${pieceId}`);
   var p5 = btn.parentElement.querySelector(`.prix_${pieceId}`);
+  var p6 = btn.parentElement.querySelector(`.mot_${pieceId}`);
 
   // Create a new input element
   var input = document.createElement("input");
@@ -268,12 +322,14 @@ let ticketId = match[2];
   var input3 = document.createElement("input");
   var input4 = document.createElement("input");
   var input5 = document.createElement("input");
+  var input6 = document.createElement("input");
 
   input.className = `immat_${pieceId}`;
   input2.className = `marque_${pieceId}`;
   input3.className = `modele_${pieceId}`;
   input4.className = `num_${pieceId}`;
   input5.className = `prix_${pieceId}`;
+  input6.className = `mot_${pieceId}`;
 
   
   // Set the value of the input to the content of the paragraph
@@ -282,6 +338,7 @@ let ticketId = match[2];
   input3.value = p3.textContent;
   input4.value = p4.textContent;
   input5.value = p5.textContent;
+  input6.value = p6.textContent;
   
   // Replace the paragraph with the input
   p.parentNode.replaceChild(input, p);
@@ -289,6 +346,7 @@ let ticketId = match[2];
   p3.parentNode.replaceChild(input3, p3);
   p4.parentNode.replaceChild(input4, p4);
   p5.parentNode.replaceChild(input5, p5);
+  p6.parentNode.replaceChild(input6, p6);
 
 
   btn.textContent = "Save";
@@ -322,6 +380,7 @@ let ticketId = match[2];
   var p3 = btn.parentElement.querySelector(`.modele_${pieceId}`);
   var p4 = btn.parentElement.querySelector(`.num_${pieceId}`);
   var p5 = btn.parentElement.querySelector(`.prix_${pieceId}`);
+  var p6 = btn.parentElement.querySelector(`.mot_${pieceId}`);
 
 
 
@@ -330,7 +389,8 @@ var dataPiece= {
 		"marque" : p2.value,
 		"modele" : p3.value,
 		"numero" : p4.value,
-		"prix" : p5.value
+		"prix" : p5.value,
+    "ref_mot" : p6.value
 	}
 
   var dataTicket = {
@@ -347,6 +407,7 @@ var dataPiece= {
   var span3 = document.createElement("span");
   var span4 = document.createElement("span");
   var span5 = document.createElement("span");
+  var span6 = document.createElement("span");
 
 
   span.className = `immat_${pieceId}`;
@@ -354,18 +415,21 @@ var dataPiece= {
   span3.className = `modele_${pieceId}`;
   span4.className = `num_${pieceId}`;
   span5.className = `prix_${pieceId}`;
+  span6.className = `mot_${pieceId}`;
 
   span.textContent = p.value;
   span2.textContent = p2.value;
   span3.textContent = p3.value;
   span4.textContent = p4.value;
   span5.textContent = p5.value;
+  span6.textContent = p6.value;
 
   p.parentNode.replaceChild(span, p);
   p2.parentNode.replaceChild(span2, p2);
   p3.parentNode.replaceChild(span3, p3);
   p4.parentNode.replaceChild(span4, p4);
   p5.parentNode.replaceChild(span5, p5);
+  p6.parentNode.replaceChild(span6, p6);
 
 
 
@@ -402,10 +466,11 @@ fetch('/update/Piece/' + pieceId, {
     var selectEtats = document.querySelectorAll('[id*="etatPiece"]');
 
   selectEtats.forEach(function(selectElement) {
+    dispChange(selectElement.value, selectElement.id, "load");
     selectElement.addEventListener("change", function(event) {
       var selectedEtat = event.target.value; // get the selected etat
       // call your function here
-      dispChange(selectedEtat, event.target.id);
+      dispChange(selectedEtat, event.target.id, "change");
     });
   });
 

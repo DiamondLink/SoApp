@@ -53,7 +53,13 @@
 	  </nav>
     <!-- Style and navbar removed for brevity -->
     <div class="container">
-        <h3 class="my-3">Infos Client</h3>
+		<br>
+		<div class="form-group row">
+			<label class="col-form-label col-sm-2" style="font-weight: 500; font-size:x-large;">Info Ticket :</label>
+			<div class="col-sm-3">
+				<input type="text" class="form-control infos" id="info">
+			</div>
+		</div>
 		<hr>
         <form method="POST">
             {{ form.hidden_tag() }}
@@ -551,6 +557,7 @@ let telValue = "+33" + document.getElementById('tel').value;
 
 let employeeValue = document.getElementById('employeeSelect').value;
 let codepostalValue = document.getElementById('codePostal').value;
+let ticketInfo = document.getElementById('info').value;
 
 	var dict= {
 		"type_client" : typeClientValue,
@@ -568,7 +575,8 @@ let codepostalValue = document.getElementById('codePostal').value;
 		"category" : categ,
 		"details" : details,
 		"employee" : employeeValue,
-		"phase" : phase
+		"phase" : phase,
+		"info" : ticketInfo
 	}
 
 	var json = JSON.stringify(dict);

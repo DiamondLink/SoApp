@@ -28,20 +28,39 @@ import pytz
 from sqlalchemy.ext.hybrid import hybrid_property
 from waitress import serve
 import apsw
+import os
 
 
+print("Initial working directory: ", os.getcwd())
+# This will print your initial working directory before any changes are made.
 
+# Get the path of the directory where the script is located
+current_directory = os.path.dirname(os.path.realpath(__file__))
+print("Current directory of the script: ", current_directory)
+# This will print the directory containing the script file.
+
+# Define the new directory
+new_directory = os.path.join(current_directory, 'templates')
+static_path = os.path.join(current_directory, 'static')
+print("New directory to switch to: ", new_directory)
+# This will print the directory we want to switch to.
+
+# Change the current working directory
+os.chdir(new_directory)
+print("Final working directory: ", os.getcwd())
+# This will print the final working directory after the change.
+
+template_dir = os.path.abspath(new_directory)
 
  
-app = Flask(__name__)
+app = Flask(__name__, template_folder=template_dir, static_folder=static_path)
 babel = Babel(app)
 app.debug = True
  
 app.config['SECRET_KEY'] = 'votre-clé-secrète'
 app.config['BABEL_DEFAULT_LOCALE'] = 'fr'
 
-db_path = 'C:\\Users\\Baptiste\\Downloads\\app_db.db'
-archive_path = 'C:\\Users\\Baptiste\\Downloads\\archive_db.db'
+db_path = 'app_db.db'
 
 # adding configuration for using a sqlite database
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///{}'.format(db_path)
@@ -77,6 +96,7 @@ class Ticket(db.Model):
     status = db.Column(db.String(100))
     created_at = db.Column(db.DateTime, default=datetime.now(pytz.timezone('Europe/Paris')))
     pieces = relationship('Piece', backref='ticket')
+    info = db.Column(db.String(100))
 
 
 
@@ -105,6 +125,7 @@ class Piece(db.Model):
     ouvert_par = db.Column(db.Integer, db.ForeignKey('employee.id'))
     gere_par = db.Column(db.Integer, db.ForeignKey('employee.id'))
     created_at = db.Column(db.DateTime, default=datetime.now(pytz.timezone('Europe/Paris')))
+    num_ref_lp = db.Column(db.String(100))
     @property
     def user(self):
         return self.ticket.user
@@ -113,6 +134,28 @@ class Piece(db.Model):
     def ticket_status(self):
         return self.ticket.status
 
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'ticket_id': self.ticket_id,
+            'category_id': self.category_id,
+            'immat': self.immat,
+            'marque': self.marque,
+            'modele': self.modele,
+            'phase': self.phase,
+            'libelle': self.libelle,
+            'numero': self.numero,
+            'ref_mot': self.ref_mot,
+            'energie': self.energie,
+            'details': self.details,
+            'etat': self.etat,
+            'prix': self.prix,
+            'ouvert_par': self.ouvert_par,
+            'gere_par': self.gere_par,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'num_ref_lp': self.num_ref_lp,
+        }
+
 class Employee(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nom = db.Column(db.String(100))
@@ -120,60 +163,6 @@ class Employee(db.Model):
     ouvert_pieces = relationship('Piece', backref='ouvert_employee', foreign_keys=[Piece.ouvert_par])
     gere_pieces = relationship('Piece', backref='gere_employee', foreign_keys=[Piece.gere_par])
 
-
-@app.route('/archive')
-def backup_database():
-    # Connect to the Flask database
-    connection = apsw.Connection(db_path)
-    cursor = connection.cursor()
-
-    # Get the current timestamp
-    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-
-    # Create the backup file name
-    backup_file = f'backup_{timestamp}.db'
-
-    # Execute the backup SQL command
-    cursor.execute(f'ATTACH DATABASE "{backup_file}" AS backup_db')
-    cursor.execute('BEGIN')
-    cursor.execute('SELECT name FROM sqlite_master WHERE type="table"')
-    tables = cursor.fetchall()
-    for table in tables:
-        cursor.execute(f'SELECT * FROM {table[0]}')
-        rows = cursor.fetchall()
-        columns = cursor.getdescription()
-
-        create_table_query = f'CREATE TABLE backup_db.{table[0]}('
-        for column in columns:
-            create_table_query += f'{column[0]} {column[1]}, '
-        create_table_query = create_table_query[:-2] + ')'
-
-        cursor.execute(create_table_query)
-        cursor.executemany(f'INSERT INTO backup_db.{table[0]} VALUES ({",".join(["?"] * len(columns))})', rows)
-
-    cursor.execute('COMMIT')
-
-    # Close the database connection
-    connection.close()
-
-@app.route('/archive_old_data')
-def archive_old_data():
-    six_months_ago = datetime.now() - timedelta(seconds = 5)
-    tables = [User, Ticket, Piece]  # list your table models here
-
-    for table in tables:
-        # Select rows older than six months
-        rows = table.query.filter(table.created_at < six_months_ago).all()
-
-        if rows:
-            # Add rows to the archive database and remove them from the main database
-            for row in rows:
-                db.session.execute(f"INSERT INTO {table.__tablename__} SELECT * FROM main.{table.__tablename__} WHERE id = :id", params={'id': row.id})
-                db.session.delete(row)
-
-            db.session.commit()
-
-    return 'Data archived'
 
 
 @app.route('/delete_all_data_main_db_0335')
@@ -251,7 +240,8 @@ def submit_ticket():
     #add_categories()
     #add_employee()
 
-    with open("modeles.json") as f:
+
+    with open('modeles.json') as f:
         data = json.load(f)
 
     form = TicketForm()
@@ -284,7 +274,7 @@ def get_data():
         db.session.add_all([new_user])
         db.session.commit()
 
-    new_ticket = Ticket(user_id=new_user.id, status="En attente de traitement")
+    new_ticket = Ticket(user_id=new_user.id, status="En attente de traitement", info=data['info'])
     db.session.add_all([new_ticket])
     db.session.commit()
 
@@ -325,8 +315,11 @@ def liste():
     tickets = Ticket.query.all()
     category = Category.query.all()
     employee = Employee.query.all()
+    pieces = [piece.to_dict() for piece in Piece.query.join(Ticket).filter(Ticket.status != 'Terminé').all()]
+    for t in tickets:
+        print(t.info)
 
-    return render_template('liste.html', tickets=tickets, category = category, employee = employee)
+    return render_template('liste.html', tickets=tickets, category = category, employee = employee, pieces=json.dumps(pieces))
 
 
 
@@ -410,13 +403,14 @@ class TicketAdmin(ModelView):
         created_at=lambda v, c, m, p: m.created_at.strftime("%Y-%m-%d à %H:%M") if m.created_at else ''
     )
 
-    column_list = ['id', 'status', 'created_at', 'user', 'pieces']
+    column_list = ['id', 'status', 'info','created_at', 'user', 'pieces']
 
     column_labels = {
         'id': 'N° Ticket',
         'created_at' : 'Date de création',
         'user' : 'Client',
-        'pieces' :  'Pièces'
+        'pieces' :  'Pièces',
+        'info' : 'Info'
     }
 
 
@@ -434,7 +428,8 @@ class PieceAdmin(ModelView):
         filters.FilterEqual(column=Piece.details, name='Details'),
         filters.FilterEqual(column=Piece.etat, name='Etat'),
         filters.FilterEqual(column=Piece.prix, name='Prix'),
-        filters.FilterEqual(column=Piece.ref_mot, name='ref_mot'),
+        filters.FilterEqual(column=Piece.ref_mot, name='Ref Moteur'),
+        filters.FilterEqual(column=Piece.num_ref_lp, name='Ref/N°/LP Piece'),
     )
 
     column_formatters = dict(
@@ -443,7 +438,7 @@ class PieceAdmin(ModelView):
         gere_par= lambda v, c, m, p: m.gere_employee.nom if m.gere_employee else ''
     )
 
-    column_list = ('immat', 'marque', 'modele', 'phase', 'libelle', 'numero', 'ref_mot', 'energie', 'details', 'etat', 'prix', 'user', "ouvert_par", "gere_par", 'ticket_status')
+    column_list = ('immat', 'marque', 'modele', 'phase', 'libelle', 'numero', 'ref_mot', 'energie', 'details', 'etat', 'prix', 'user', "ouvert_par", "gere_par", 'ticket_status', 'num_ref_lp')
 
     column_labels = {
         'user': 'Client', 
@@ -451,7 +446,8 @@ class PieceAdmin(ModelView):
         'gere_par' : "Géré par",
         'ticket_status' : "Status du ticket",
         'numero' : "Ref Constructeur",
-        'ref_mot' : "Ref Moteur"
+        'ref_mot' : "Ref Moteur",
+        'num_ref_lp' : "Ref/N°/LP Piece"
     }
 
 
@@ -564,13 +560,14 @@ class TicketAdmin2(ModelView):
         created_at=lambda v, c, m, p: m.created_at.strftime("%Y-%m-%d à %H:%M") if m.created_at else ''
     )
 
-    column_list = ['id', 'status', 'created_at', 'user', 'pieces']
+    column_list = ['id', 'status', 'info','created_at', 'user', 'pieces']
 
     column_labels = {
         'id': 'N° Ticket',
         'created_at' : 'Date de création',
         'user' : 'Client',
-        'pieces' :  'Pièces'
+        'pieces' :  'Pièces',
+        'info' : 'Info'
     }
 
 
@@ -591,6 +588,7 @@ class PieceAdmin2(ModelView):
         filters.FilterEqual(column=Piece.etat, name='Etat'),
         filters.FilterEqual(column=Piece.prix, name='Prix'),
         filters.FilterEqual(column=Piece.ref_mot, name='ref_mot'),
+        filters.FilterEqual(column=Piece.num_ref_lp, name='Ref/N°/LP Piece'),
     )
 
     column_formatters = dict(
@@ -599,7 +597,7 @@ class PieceAdmin2(ModelView):
         gere_par= lambda v, c, m, p: m.gere_employee.nom if m.gere_employee else ''
     )
 
-    column_list = ('immat', 'marque', 'modele', 'phase', 'libelle', 'numero', 'ref_mot', 'energie', 'details', 'etat', 'prix', 'user', "ouvert_par", "gere_par", 'ticket_status')
+    column_list = ('immat', 'marque', 'modele', 'phase', 'libelle', 'numero', 'ref_mot', 'energie', 'details', 'etat', 'prix', 'user', "ouvert_par", "gere_par", 'ticket_status', 'num_ref_lp')
 
     column_labels = {
         'user': 'Client', 
@@ -607,7 +605,8 @@ class PieceAdmin2(ModelView):
         'gere_par' : "Géré par",
         'ticket_status' : "Status du ticket",
         'numero' : "Ref Constructeur",
-        'ref_mot' : "Ref Moteur"
+        'ref_mot' : "Ref Moteur",
+        'num_ref_lp' : "Ref/N°/LP Piece"
     }
 
 class ReadOnlyModelView(ModelView):
