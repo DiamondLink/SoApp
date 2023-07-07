@@ -29,6 +29,7 @@ from sqlalchemy.ext.hybrid import hybrid_property
 from waitress import serve
 import apsw
 import os
+import sqlite3
 
 
 print("Initial working directory: ", os.getcwd())
@@ -81,7 +82,6 @@ class User(db.Model):
     __tablename__ = 'user'
     id = db.Column(db.Integer, primary_key=True)
     type_client = db.Column(db.String(50))
-    prenom = db.Column(db.String(100))
     nom = db.Column(db.String(100))
     tel = db.Column(db.String(100))
     tickets = relationship('Ticket', backref='user')
@@ -164,6 +164,65 @@ class Employee(db.Model):
     gere_pieces = relationship('Piece', backref='gere_employee', foreign_keys=[Piece.gere_par])
 
 
+def backup_db_f(path_to_db, path_to_backup):
+    # Connect to the existing database
+    source = sqlite3.connect(path_to_db)
+
+    # Connect to the backup database
+    destination = sqlite3.connect(path_to_backup)
+
+    # Perform the backup
+    source.backup(destination)
+
+    # Close the database connections
+    source.close()
+    destination.close()
+
+def backup_db(path_to_db, path_to_backup):
+    if not os.path.exists(path_to_backup):
+        # If not, create a backup first
+        backup_db_f(path_to_db, path_to_backup)
+    # Connect to the existing database
+    source_conn = sqlite3.connect(path_to_db)
+    source_cursor = source_conn.cursor()
+
+    # Connect to the backup database
+    backup_conn = sqlite3.connect(path_to_backup)
+    backup_cursor = backup_conn.cursor()
+
+    # Get all table names
+    source_cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+    tables = source_cursor.fetchall()
+
+    for table in tables:
+        table = table[0]
+
+        # Get all rows from the table in the source database
+        source_cursor.execute(f"SELECT * FROM {table};")
+        rows = source_cursor.fetchall()
+
+        # Get the column names
+        column_names = list(map(lambda x: x[0], source_cursor.description))
+
+        for row in rows:
+            # Create the insert or ignore command
+            query = f"""
+            INSERT OR IGNORE INTO {table} ({', '.join(column_names)})
+            VALUES ({', '.join(['?']*len(row))});
+            """
+            backup_cursor.execute(query, row)
+
+    # Commit the changes and close the connections
+    backup_conn.commit()
+    source_conn.close()
+    backup_conn.close()
+
+
+@app.route("/backup")
+def backup():
+    backup_db('instance//app_db.db', 'instance//backup_db.db')
+    return "Backup Saved"
+
 
 @app.route('/delete_all_data_main_db_0335')
 def delete_all_data_main_db():
@@ -187,9 +246,8 @@ class TicketForm(FlaskForm):
     type_client = SelectField('Type de Client', choices=[('particulier', 'Particulier'), ('professionnel', 'Professionnel')], validators=[DataRequired()], render_kw={"placeholder": "Type Client"})
 
 
-    prenom = StringField('Prénom', validators=[DataRequired()])
-    nom = StringField('Nom', validators=[DataRequired()])
-    tel = StringField('Téléphone', validators=[DataRequired()])
+    nom = StringField('Nom')
+    tel = StringField('Téléphone')
     
     # Informations sur la pièce automobile
     immat = StringField("Immatriculation")
@@ -205,10 +263,8 @@ class TicketForm(FlaskForm):
 
 
 
-def searchForUser(prenom, nom, tel):
+def searchForUser(tel):
     filters = []
-    filters.append(User.prenom.ilike(f"%{prenom}%"))
-    filters.append(User.nom.ilike(f"%{nom}%"))
     filters.append(User.tel == tel)
 
     users = User.query.filter(*filters).all()
@@ -218,22 +274,34 @@ def searchForUser(prenom, nom, tel):
 def add_categories():
     new_category = Category(category_name="Carrosserie", color="blue")
     new_category2 = Category(category_name="Habitacle", color="green")
-    new_category3 = Category(category_name="Roues", color="red")
-    new_category4 = Category(category_name="Mecanique Légère", color="pink")
-    new_category5 = Category(category_name="Mécanique Lourde", color="orange")
+    new_category3 = Category(category_name="Roues", color="orange")
+    new_category4 = Category(category_name="Mecanique Légère", color="purple")
+    new_category5 = Category(category_name="Boite Vitesse/Moteurs", color="red")
 
-    db.session.add_all([new_category, new_category2, new_category3, new_category4, new_category5])
+    db.session.add_all([new_category, new_category2, new_category5, new_category4, new_category3])
     db.session.commit()
 
 def add_employee():
     new_employee = Employee(nom = "Lisa")
     new_employee2 = Employee(nom = "Fabien")
     new_employee3 = Employee(nom = "Kevin")
+    new_employee4 = Employee(nom = "Damien")
+    new_employee5 = Employee(nom = "Lilliana")
+    new_employee6 = Employee(nom = "Stéphanie S")
+    new_employee7 = Employee(nom = "Jihad")
+    new_employee8 = Employee(nom = "DIR SOA")
     
 
-    db.session.add_all([new_employee, new_employee2, new_employee3])
+    db.session.add_all([new_employee, new_employee2, new_employee3, new_employee4, new_employee5, new_employee6, new_employee7, new_employee8])
     db.session.commit()
 
+print("started")
+
+@app.route('/addinit')
+def add_initial_datas():
+    add_categories()
+    add_employee()
+    return "Initial Datas Added"
  
 @app.route('/ticket', methods=['GET', 'POST'])
 def submit_ticket():
@@ -266,11 +334,11 @@ def get_data():
     data = request.get_json()
     # Now you can use the data
     
-    alreadyUser = searchForUser(data["prenom"], data["nom"], data["tel"])
-    if len(alreadyUser) != 0:
+    alreadyUser = searchForUser(data["tel"])
+    if len(alreadyUser) != 0 and data["tel"] != "+33":
         new_user = alreadyUser[0]
     else:
-        new_user = User(type_client=data["type_client"], prenom = data["prenom"], nom = data["nom"], tel=data["tel"], code_postal = data["code_postal"])
+        new_user = User(type_client=data["type_client"], nom = data["nom"], tel=data["tel"], code_postal = data["code_postal"])
         db.session.add_all([new_user])
         db.session.commit()
 
@@ -288,9 +356,13 @@ def get_data():
     for i in range(len(data["immat"])):    #TODO
         print("run")
         try:
+            print("try1")
             category = Category.query.filter_by(category_name=data['category'][i]).first()
+            print("try2")
             employee = Employee.query.filter_by(nom=data["employee"]).first()
+            print("try3")
             new_pieces.append(Piece(ouvert_par = employee.id, ticket_id=new_ticket.id, category_id = category.id, immat = data["immat"][i], marque = data["marque"][i], modele = data["modele"][i], libelle = data["libelle"][i], numero = data["numero"][i], energie = data["energie"][i], etat = "En attente de traitement", details = data["details"][i], prix = "A définir", phase = data["phase"][i]))
+            print("try4")
         except Exception as e:
             print("Error: ", str(e))
 
@@ -351,7 +423,6 @@ def update_item(table_name, item_id):
 #User
 class UserAdmin(ModelView):
     column_filters = [
-        'prenom',
         'nom',
         'type_client',
         'tel',
@@ -359,7 +430,7 @@ class UserAdmin(ModelView):
         filters.FilterLike(User.nom, 'Nom commence par'),
     ]
 
-    column_list = ('prenom', 'nom', 'type_client', 'tel', 'code_postal', 'pieces')
+    column_list = ('nom', 'type_client', 'tel', 'code_postal', 'pieces')
 
     def _user_formatter(view, context, model, name):
         if model.tickets:
@@ -375,13 +446,12 @@ class UserAdmin(ModelView):
     }
 
     column_labels = {
-        'prenom' : "Prénom / Société",
-        'nom' : "Nom / Contact (Entreprise)"
+        'nom' : "Nom / Description Client"
 
     }
 
 #Ticket
-class FilterStatus(filters.FilterEqual):
+class FilterStatus(filters.FilterLike):
     def get_options(self, view):
         return [
             ('Terminé', 'Terminé'),
@@ -419,21 +489,21 @@ class PieceAdmin(ModelView):
     can_edit = False
 
     column_filters = (
-        filters.FilterEqual(column=Piece.immat, name='Immat'),
-        filters.FilterEqual(column=Piece.marque, name='Marque'),
-        filters.FilterEqual(column=Piece.modele, name='Modele'),
-        filters.FilterEqual(column=Piece.libelle, name='Libelle'),
-        filters.FilterEqual(column=Piece.numero, name='Numero'),
-        filters.FilterEqual(column=Piece.energie, name='Energie'),
-        filters.FilterEqual(column=Piece.details, name='Details'),
-        filters.FilterEqual(column=Piece.etat, name='Etat'),
-        filters.FilterEqual(column=Piece.prix, name='Prix'),
-        filters.FilterEqual(column=Piece.ref_mot, name='Ref Moteur'),
-        filters.FilterEqual(column=Piece.num_ref_lp, name='Ref/N°/LP Piece'),
+        filters.FilterLike(column=Piece.immat, name='Immat'),
+        filters.FilterLike(column=Piece.marque, name='Marque'),
+        filters.FilterLike(column=Piece.modele, name='Modele'),
+        filters.FilterLike(column=Piece.libelle, name='Libelle'),
+        filters.FilterLike(column=Piece.numero, name='Numero'),
+        filters.FilterLike(column=Piece.energie, name='Energie'),
+        filters.FilterLike(column=Piece.details, name='Details'),
+        filters.FilterLike(column=Piece.etat, name='Etat'),
+        filters.FilterLike(column=Piece.prix, name='Prix'),
+        filters.FilterLike(column=Piece.ref_mot, name='Ref Moteur'),
+        filters.FilterLike(column=Piece.num_ref_lp, name='Ref/N°/LP Piece'),
     )
 
     column_formatters = dict(
-        user=lambda v, c, m, p: Markup(f'<a href="{get_url("admin_clients.edit_view", id=m.user.id)}">{m.user.nom} {m.user.prenom}</a>') if m.user else '',
+        user=lambda v, c, m, p: Markup(f'<a href="{get_url("admin_clients.edit_view", id=m.user.id)}">{m.user.tel}</a>') if m.user else '',
         ouvert_par= lambda v, c, m, p: m.ouvert_employee.nom if m.ouvert_employee else '',
         gere_par= lambda v, c, m, p: m.gere_employee.nom if m.gere_employee else ''
     )
@@ -513,7 +583,6 @@ class UserAdmin2(ModelView):
     can_delete = False
 
     column_filters = [
-        'prenom',
         'nom',
         'type_client',
         'tel',
@@ -521,7 +590,7 @@ class UserAdmin2(ModelView):
         filters.FilterLike(User.nom, 'Nom commence par'),
     ]
 
-    column_list = ('prenom', 'nom', 'type_client', 'tel', 'code_postal', 'pieces')
+    column_list = ('nom', 'type_client', 'tel', 'code_postal', 'pieces')
 
     def _user_formatter(view, context, model, name):
         if model.tickets:
@@ -537,8 +606,7 @@ class UserAdmin2(ModelView):
     }
 
     column_labels = {
-        'prenom' : "Prénom / Société",
-        'nom' : "Nom / Contact (Entreprise)"
+        'nom' : "Nom / Description Client"
 
     }
 
@@ -578,21 +646,23 @@ class PieceAdmin2(ModelView):
     can_delete = False
 
     column_filters = (
-        filters.FilterEqual(column=Piece.immat, name='Immat'),
-        filters.FilterEqual(column=Piece.marque, name='Marque'),
-        filters.FilterEqual(column=Piece.modele, name='Modele'),
-        filters.FilterEqual(column=Piece.libelle, name='Libelle'),
-        filters.FilterEqual(column=Piece.numero, name='Numero'),
-        filters.FilterEqual(column=Piece.energie, name='Energie'),
-        filters.FilterEqual(column=Piece.details, name='Details'),
-        filters.FilterEqual(column=Piece.etat, name='Etat'),
-        filters.FilterEqual(column=Piece.prix, name='Prix'),
-        filters.FilterEqual(column=Piece.ref_mot, name='ref_mot'),
-        filters.FilterEqual(column=Piece.num_ref_lp, name='Ref/N°/LP Piece'),
+        filters.FilterLike(column=Piece.immat, name='Immat'),
+        filters.FilterLike(column=Piece.marque, name='Marque'),
+        filters.FilterLike(column=Piece.modele, name='Modele'),
+        filters.FilterLike(column=Piece.libelle, name='Libelle'),
+        filters.FilterLike(column=Piece.numero, name='Numero'),
+        filters.FilterLike(column=Piece.energie, name='Energie'),
+        filters.FilterLike(column=Piece.details, name='Details'),
+        filters.FilterLike(column=Piece.etat, name='Etat'),
+        filters.FilterLike(column=Piece.prix, name='Prix'),
+        filters.FilterLike(column=Piece.ref_mot, name='ref_mot'),
+        filters.FilterLike(column=Piece.num_ref_lp, name='Ref/N°/LP Piece'),
+
+        
     )
 
     column_formatters = dict(
-        user=lambda v, c, m, p: Markup(f'<a href="{get_url("user_clients.edit_view", id=m.user.id)}">{m.user.nom} {m.user.prenom}</a>') if m.user else '',
+        user=lambda v, c, m, p: Markup(f'<a href="{get_url("user_clients.edit_view", id=m.user.id)}">{m.user.tel}</a>') if m.user else '',
         ouvert_par= lambda v, c, m, p: m.ouvert_employee.nom if m.ouvert_employee else '',
         gere_par= lambda v, c, m, p: m.gere_employee.nom if m.gere_employee else ''
     )

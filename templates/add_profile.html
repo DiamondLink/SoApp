@@ -54,45 +54,48 @@
     <!-- Style and navbar removed for brevity -->
     <div class="container">
 		<br>
-		<div class="form-group row">
-			<label class="col-form-label col-sm-2" style="font-weight: 500; font-size:x-large;">Info Ticket :</label>
-			<div class="col-sm-3">
+		<div class="form-group row col-6">
+			<label class="col-form-label col-sm-4" style="font-weight: 500; font-size:x-large;">Message :</label>
+			<div class="col-sm-5">
 				<input type="text" class="form-control infos" id="info">
 			</div>
 		</div>
 		<hr>
-        <form method="POST">
-            {{ form.hidden_tag() }}
-            <!-- Customer and ticket info here -->
-            <div class="row">
-                <div class="col-md-6">
+
+            <div class="col-6" style="float: left;">
+                <div class="">
+
 					<div class="form-group row">
-						<label for="type_client" class="col-sm-4 col-form-label" style="font-weight: 700;">{{ form.type_client.label }} :</label>
-						<div class="col-sm-6 infos">
-						{{ form.type_client(id="type_client", class="form-control") }}
-						</div>
-					</div>
-					<div class="form-group row">
-						<label for="type_client" class="col-sm-4 col-form-label" style="font-weight: 700;">{{ form.prenom.label }} :</label>
-						<div class="col-sm-6 infos">
-						{{ form.prenom(id="prenom", class="form-control") }}
-						</div>
-					</div>
-					<div class="form-group row">
-						<label for="type_client" class="col-sm-4 col-form-label" style="font-weight: 700;">{{ form.nom.label }} :</label>
-						<div class="col-sm-6 infos">
-						{{ form.nom(id="nom", class="form-control") }}
-						</div>
-					</div>
+    <label for="type_client" class="col-sm-4 col-form-label" style="font-weight: 700;">Type Client :</label>
+    <div class="col-sm-6 infos">
+        <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="type_client" id="option1" value="option1" checked>
+            <label class="form-check-label" for="option1">Particulier</label>
+        </div>
+        <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="type_client" id="option2" value="option2">
+            <label class="form-check-label" for="option2">Professionnel</label>
+        </div>
+    </div>
+</div>
+
+
 					<div class="form-group row">
 						<label for="type_client" class="col-sm-4 col-form-label" style="font-weight: 700;">{{ form.tel.label }} :</label>
 						<div class="col-sm-6 infos">
 							<div class="input-group">
 								<span class="input-group-text">+33</span>
-								{{ form.tel(id="tel", class="form-control") }}
+								{{ form.tel(id="tel", class="form-control", oninput="formatInput(this)", maxlength="14") }}
 							</div>
 						</div>
 					</div>
+					<div class="form-group row">
+						<label for="type_client" class="col-sm-4 col-form-label" style="font-weight: 700;">Nom/Description Client:</label>
+						<div class="col-sm-6 infos">
+						{{ form.nom(id="nom", class="form-control") }}
+						</div>
+					</div>
+
 					
 
 					<div class="form-group row">
@@ -115,20 +118,24 @@
         </select>
     </div>
 <br><br><br><br>
-	<form id="myForm" onsubmit="sendData(event)">
+	<div id="myForm">
 		<!-- your form fields here -->
 		<div class="form-group" style="display:none; visibility: hidden;">
 			{{ form.submit(class="btn") }}
 		</div>
 		<button class="btn btn-success" onclick="submitForm()" style="margin-left: 70%;">Enregistrer</button>
-	</form>
+		
 </div>
 
 				</div>
 				
-				<div id="vertical-line"></div>
 				<div style="margin-right: 20px;
 				margin-left: 20px;"></div>
+	</div>
+			</div>
+			<div id="vertical-line"></div>
+	<div class="col-6" style="float: right; height: 10%;">
+
 
 					<div class="tabbed-form" id="parts" class="part">
 						<div id="tab-titles" style="display: flex;">
@@ -143,6 +150,12 @@
 						
 						<div>
 							<div class="tab-content active" id="tab-content-1">
+								<div class="form-group row">
+									<label for="type_client" class="col-sm-6 col-form-label" style="font-weight: 700;font-size: x-large;">Nom Pièce :</label>
+									<div class="col-sm-6">
+									{{ form.libelle(class="form-control", id="libel") }}
+									</div>
+								</div>
 								<div class="form-group row">
 									<label for="type_client" class="col-sm-6 col-form-label" style="font-weight: 700;">{{ form.immat.label }} :</label>
 									<div class="col-sm-6">
@@ -178,7 +191,7 @@
 								</div>
 								
 								
-								<div class="form-group row">
+								<div class="form-group row", style="display: none;">
 									<label for="type_client" class="col-sm-6 col-form-label" style="font-weight: 700;">{{ form.libelle.label }} :</label>
 									<div class="col-sm-6">
 									{{ form.libelle(class="form-control tabs") }}
@@ -243,26 +256,28 @@
 					</div>
             </div>
 			
-        </form>
+	</div>
     </div>
     <!-- Bootstrap JS -->
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
 	<script>
-
-
-$(document).ready(function(){
-  $('#type_client').change(function(){
-    var selectedValue = $(this).val();
-    if(selectedValue === 'particulier') { 
-      $('label[for=prenom]').text('Prénom');
-      $('label[for=nom]').text('Nom');
-    } 
-    else if(selectedValue === 'professionnel') { 
-      $('label[for=prenom]').text('Société');
-      $('label[for=nom]').text('Contact');
+function formatInput(input) {
+    const value = input.value.replace(/\D/g, "").substring(0,10); // remove non-digits and limit length
+    let formatted = '';
+    for (let i = 0; i < value.length; i++) {
+        if (value[0] === '0') { // if first digit is '0'
+		input.maxLength = "14";
+            if (i !== 0 && i % 2 === 0) formatted += '.'; // insert dot every 2 digits
+        } else { // if first digit is not '0'
+		input.maxLength = "13";
+            if (i !== 0 && i % 2 !== 0) formatted += '.'; // insert dot every 2 digits, starting from the second digit
+        }
+        formatted += value[i];
     }
-  });
-});
+    input.value = formatted;
+}
+
+
 
 
 
@@ -344,10 +359,11 @@ $('#add-tab').click(function(){
 	nbBoutons++;
 	id_count++;
 	var link = document.getElementsByClassName(`tabs`);
+	var libelEl = document.getElementById("libel");
 		immat[currentNum] = link[0].value;
 		marque[currentNum] = link[1].value;
 		modele[currentNum] = link[2].value;
-		libelle[currentNum] = link[3].value;
+		libelle[currentNum] = libelEl.value;
 		num[currentNum] = link[4].value;
 		energie[currentNum] = link[5].value;
 		details[currentNum] = link[6].value;
@@ -371,6 +387,8 @@ $('#add-tab').click(function(){
 		link[5].value="";
 		link[6].value="";
 		//link[7].value="";
+
+		libelEl.value = "";
 
 		moteurElement.value = "";
 
@@ -447,9 +465,11 @@ $(document).on('click', "[id*='delete']", function(event){
 		var phaseElement = document.getElementsByClassName(`phase`)[0];
 
 		var moteurElement = document.getElementById("moteur");
+		var libelEl = document.getElementById("libel");
 
 		link[0].value=immat[currentNum];
-		link[3].value=libelle[currentNum];
+		//link[3].value=libelle[currentNum];
+		libelEl.value = libelle[currentNum];
 		link[4].value=num[currentNum];
 		link[5].value=energie[currentNum];
 		link[6].value=details[currentNum];
@@ -482,10 +502,11 @@ $(document).on('click', "[id*='piece']", function(){
 	var link = document.getElementsByClassName(`tabs`);
 	var phaseElement = document.getElementsByClassName(`phase`)[0];
 	var moteurElement = document.getElementById("moteur");
+	var libelEl = document.getElementById("libel");
 		immat[currentNum] = link[0].value;
 		marque[currentNum] = link[1].value;
 		modele[currentNum] = link[2].value;
-		libelle[currentNum] = link[3].value;
+		libelle[currentNum] = libelEl.value;
 		num[currentNum] = link[4].value;
 		energie[currentNum] = link[5].value;
 		details[currentNum] = link[6].value;
@@ -518,7 +539,7 @@ $(document).on('click', "[id*='piece']", function(){
 		$('#marque').val(marque[currentNum]).change()
 		$('#modele').val(modele[currentNum]).change()
 	    link[2].value=modele[currentNum];
-		link[3].value=libelle[currentNum];
+		libelEl.value=libelle[currentNum];
 		link[4].value=num[currentNum];
 		link[5].value=energie[currentNum];
 		link[6].value=details[currentNum];
@@ -537,10 +558,11 @@ function submitForm() {
 	var link = document.getElementsByClassName(`tabs`);
 	var phaseElement = document.getElementsByClassName(`phase`)[0];
 	var moteurElement = document.getElementById("moteur");
+	var libelEl = document.getElementById("libel");
 		immat[currentNum] = link[0].value;
 		marque[currentNum] = link[1].value;
 		modele[currentNum] = link[2].value;
-		libelle[currentNum] = link[3].value;
+		libelle[currentNum] = libelEl.value;
 		num[currentNum] = link[4].value;
 		energie[currentNum] = link[5].value;
 		details[currentNum] = link[6].value;
@@ -550,10 +572,21 @@ function submitForm() {
 
 		phase[currentNum] = phaseElement.value;
 
-	let typeClientValue = document.getElementById('type_client').value;
-let prenomValue = document.getElementById('prenom').value;
+	let typeClientValue;
+
+	var radios = document.getElementsByName('type_client');
+    for (var i = 0, length = radios.length; i < length; i++) {
+        if (radios[i].checked) {
+            // The radio button is selected, return its value
+            typeClientValue = radios[i].value;
+        }
+    }
+
 let nomValue = document.getElementById('nom').value;
 let telValue = "+33" + document.getElementById('tel').value;
+
+telValue = telValue.replace('+330', '+33');
+
 
 let employeeValue = document.getElementById('employeeSelect').value;
 let codepostalValue = document.getElementById('codePostal').value;
@@ -561,7 +594,6 @@ let ticketInfo = document.getElementById('info').value;
 
 	var dict= {
 		"type_client" : typeClientValue,
-		"prenom" : prenomValue,
 		"nom" : nomValue,
 		"tel" : telValue,
 		"code_postal" : codepostalValue,
@@ -601,8 +633,8 @@ let ticketInfo = document.getElementById('info').value;
 	clearFields()
 
 	//event.preventDefault();
+	window.location.href = "/liste";
 
-    document.getElementById("myForm").submit(); // make sure to replace "myForm" with the actual id of your form
 
 }
 	</script>
