@@ -126,6 +126,7 @@ class Piece(db.Model):
     gere_par = db.Column(db.Integer, db.ForeignKey('employee.id'))
     created_at = db.Column(db.DateTime, default=datetime.now(pytz.timezone('Europe/Paris')))
     num_ref_lp = db.Column(db.String(100))
+    dimension_pneu = db.Column(db.String(100))
     @property
     def user(self):
         return self.ticket.user
@@ -350,7 +351,9 @@ def get_data():
 
     for key, value in data.items():
         if isinstance(value, list):
-            data[key] = [item for item in value if item is not None]
+            data[key] = [item if item is not None else "" for item in value]
+            data[key].pop(0)
+
 
     print(data)
     for i in range(len(data["immat"])):    #TODO
@@ -361,7 +364,7 @@ def get_data():
             print("try2")
             employee = Employee.query.filter_by(nom=data["employee"]).first()
             print("try3")
-            new_pieces.append(Piece(ouvert_par = employee.id, ticket_id=new_ticket.id, category_id = category.id, immat = data["immat"][i], marque = data["marque"][i], modele = data["modele"][i], libelle = data["libelle"][i], numero = data["numero"][i], energie = data["energie"][i], etat = "En attente de traitement", details = data["details"][i], prix = "A définir", phase = data["phase"][i]))
+            new_pieces.append(Piece(ouvert_par = employee.id, ticket_id=new_ticket.id, category_id = category.id, immat = data["immat"][i], marque = data["marque"][i], modele = data["modele"][i], libelle = data["libelle"][i], numero = data["numero"][i], energie = data["energie"][i], etat = "En attente de traitement", details = data["details"][i], prix = "A définir", phase = data["phase"][i], ref_mot = data["ref_mot"][i],dimension_pneu = data["dimension_pneu"][i]))
             print("try4")
         except Exception as e:
             print("Error: ", str(e))

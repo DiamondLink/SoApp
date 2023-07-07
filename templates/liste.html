@@ -156,6 +156,10 @@
       <span class="badge" style="color: black; border: 1px solid black; font-size: 1em; font-weight: 400;"> <strong>Modèle:</strong> <span class="modele_{{ piece.id }}">{{piece.modele}}</span></span>&nbsp;
       <span class="badge" style="color: black; border: 1px solid black; font-size: 1em; font-weight: 400;"> <strong>Ref Fabriquant:</strong> <span class="num_{{ piece.id }}">{{piece.numero}}</span></span>&nbsp;
       <span class="badge" style="color: black; border: 1px solid black; font-size: 1em; font-weight: 400;"> <strong>Ref Moteur:</strong> <span class="mot_{{ piece.id }}">{{piece.ref_mot}}</span></span>&nbsp;
+
+      {% if piece.dimension_pneu !="" %}
+      <span class="badge" style="color: black; border: 1px solid black; font-size: 1em; font-weight: 400;"> <strong>Dimension Pneu:</strong> <span class="dim_{{ piece.id }}">{{piece.dimension_pneu}}</span></span>&nbsp;
+      {% endif %}
       <span class="badge" style="color: black; border: 1px solid black; font-size: 1em; font-weight: 400;"> <strong>Commentaire:</strong> <span class="details_{{ piece.id }}">{{piece.details}}</span></span>&nbsp;
 
       <button type="button" class="btn btn-warning" onclick="editPiece(this)" id="{{ piece.id }}_{{ ticket.id }}">

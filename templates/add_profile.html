@@ -21,9 +21,35 @@
   border-left: 1px solid black;
   position: absolute;
   top: 20%; /* The top margin is set to 10% of the viewport height */
-  bottom: -20%; /* The bottom margin is set to 10% of the viewport height */
+  bottom: -60%; /* The bottom margin is set to 10% of the viewport height */
   left: 50%; /* This positions the line in the middle of the viewport */
 }
+
+.tooltip-wrapper {
+    position: relative;
+}
+
+.tooltip-text {
+    visibility: hidden;
+    background-color: black;
+    color: #fff;
+    text-align: center;
+    padding: 5px 10px;
+    border-radius: 6px;
+    position: absolute;
+    z-index: 1;
+    bottom: 100%;
+    left: 50%;
+    margin-left: -60px;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.tooltip-wrapper:hover .tooltip-text {
+    visibility: visible;
+    opacity: 1;
+}
+
 	</style>
 </head>
 <body>
@@ -90,7 +116,7 @@
 						</div>
 					</div>
 					<div class="form-group row">
-						<label for="type_client" class="col-sm-4 col-form-label" style="font-weight: 700;">Nom/Description Client:</label>
+						<label for="type_client" class="col-sm-4 col-form-label" style="font-weight: 700;">Nom/Raison Sociale:</label>
 						<div class="col-sm-6 infos">
 						{{ form.nom(id="nom", class="form-control") }}
 						</div>
@@ -151,7 +177,7 @@
 						<div>
 							<div class="tab-content active" id="tab-content-1">
 								<div class="form-group row">
-									<label for="type_client" class="col-sm-6 col-form-label" style="font-weight: 700;font-size: x-large;">Nom Pièce :</label>
+									<label for="type_client" class="col-sm-6 col-form-label" style="font-weight: 700;font-size: x-large;">Libellé :</label>
 									<div class="col-sm-6">
 									{{ form.libelle(class="form-control", id="libel") }}
 									</div>
@@ -248,6 +274,39 @@
 										</select>
 									</div>
 								</div>
+								<br>&nbsp;&nbsp;&nbsp;&nbsp;
+								<div class="col-sm-6">
+									<input class="form-check-input" type="checkbox" value="" id="check">
+									<label class="form-check-label" for="exampleCheckbox">
+										Ajouter des dimensions de pneu
+									</label>
+									<div id="dimensions" style="display: none;" class="row">
+										<div class="col p-0 tooltip-wrapper">
+											<input type="text" class="form-control tooltip-input" id="dimp1">
+											<div class="tooltip-text">Largeur</div>
+										</div><p>/</p>
+										<div class="col p-0 tooltip-wrapper">
+											<input type="text" class="form-control tooltip-input" id="dimp2">
+											<div class="tooltip-text">Hauteur</div>
+										</div>
+										<div class="col p-0 tooltip-wrapper">
+											<input type="text" class="form-control tooltip-input" id="dimp3">
+											<div class="tooltip-text">Dimension de la jante</div>
+										</div>
+										<div class="col p-0 tooltip-wrapper">
+											<input type="text" class="form-control tooltip-input" id="dimp4">
+											<div class="tooltip-text">Capacité de charge</div>
+										</div>
+										<div class="col p-0 tooltip-wrapper">
+											<input type="text" class="form-control tooltip-input" id="dimp5">
+											<div class="tooltip-text">Indice de vitesse</div>
+										</div>
+									</div>
+								</div>
+								
+								
+								
+								
 								<br><br><br>
         						
 							</div>
@@ -261,6 +320,23 @@
     <!-- Bootstrap JS -->
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
 	<script>
+
+
+document.getElementById('check').addEventListener('change', function() {
+    var dimensions = document.getElementById('dimensions');
+    if (this.checked) {
+        dimensions.style.display = 'flex';
+    } else {
+        dimensions.style.display = 'none';
+    }
+});
+
+
+$(function () {
+  $('[data-toggle="tooltip"]').tooltip()
+})
+
+
 function formatInput(input) {
     const value = input.value.replace(/\D/g, "").substring(0,10); // remove non-digits and limit length
     let formatted = '';
@@ -350,6 +426,14 @@ categ = [];
 details = [];
 ref_mot=[]
 
+check = [];
+dimp1 = [];
+dimp2 = [];
+dimp3 = [];
+dimp4 = [];
+dimp5 = [];
+
+
 phase = [];
 var nbBoutons = 1;
 var id_count = 1;
@@ -368,6 +452,21 @@ $('#add-tab').click(function(){
 		energie[currentNum] = link[5].value;
 		details[currentNum] = link[6].value;
 		categ[currentNum] = link[7].value;
+
+		var checkEl = document.getElementById("check");
+		var dimp1El = document.getElementById("dimp1");
+		var dimp2El = document.getElementById("dimp2");
+		var dimp3El = document.getElementById("dimp3");
+		var dimp4El = document.getElementById("dimp4");
+		var dimp5El = document.getElementById("dimp5");
+
+
+		check[currentNum] = checkEl.checked;
+		dimp1[currentNum] = dimp1El.value;
+		dimp2[currentNum] = dimp2El.value;
+		dimp3[currentNum] = dimp3El.value;
+		dimp4[currentNum] = dimp4El.value;
+		dimp5[currentNum] = dimp5El.value;
 
 
 		var phaseElement = document.getElementsByClassName(`phase`)[0];
@@ -391,6 +490,19 @@ $('#add-tab').click(function(){
 		libelEl.value = "";
 
 		moteurElement.value = "";
+
+		checkEl.checked = false;
+		dimp1El.value = ""
+		dimp2El.value = ""
+		dimp3El.value = ""
+		dimp4El.value = ""
+		dimp5El.value = ""
+
+
+		var dimensions = document.getElementById('dimensions');
+
+        dimensions.style.display = 'none';
+
 
 
 		resetSelectFields();
@@ -436,6 +548,7 @@ $(document).on('click', "[id*='delete']", function(event){
 
 	element = document.getElementById(`piece${numDeleted}`);
 	element.remove();
+
 	
 	
 	immat[numDeleted] = undefined;
@@ -450,6 +563,13 @@ $(document).on('click', "[id*='delete']", function(event){
 	phase[numDeleted] = undefined;
 
 	ref_mot[numDeleted] = undefined;
+
+	check[numDeleted] = false;
+	dimp1[numDeleted] = undefined;
+	dimp2[numDeleted] = undefined;
+	dimp3[numDeleted] = undefined;
+	dimp4[numDeleted] = undefined;
+	dimp5[numDeleted] = undefined;
 
 	
 
@@ -467,6 +587,14 @@ $(document).on('click', "[id*='delete']", function(event){
 		var moteurElement = document.getElementById("moteur");
 		var libelEl = document.getElementById("libel");
 
+
+		var checkEl = document.getElementById("check");
+		var dimp1El = document.getElementById("dimp1");
+		var dimp2El = document.getElementById("dimp2");
+		var dimp3El = document.getElementById("dimp3");
+		var dimp4El = document.getElementById("dimp4");
+		var dimp5El = document.getElementById("dimp5");
+
 		link[0].value=immat[currentNum];
 		//link[3].value=libelle[currentNum];
 		libelEl.value = libelle[currentNum];
@@ -476,6 +604,20 @@ $(document).on('click', "[id*='delete']", function(event){
 		link[7].value=categ[currentNum];
 
 		moteurElement.value = ref_mot[currentNum];
+
+		checkEl.checked = check[currentNum];
+		dimp1El.value = dimp1[currentNum];
+		dimp2El.value = dimp2[currentNum];
+		dimp3El.value = dimp3[currentNum];
+		dimp4El.value = dimp4[currentNum];
+		dimp5El.value = dimp5[currentNum];
+
+		var dimensions = document.getElementById('dimensions');
+    if (checkEl.checked) {
+        dimensions.style.display = 'flex';
+    } else {
+        dimensions.style.display = 'none';
+    }
 	}
 
 	if (marque[currentNum] === ''){
@@ -503,6 +645,14 @@ $(document).on('click', "[id*='piece']", function(){
 	var phaseElement = document.getElementsByClassName(`phase`)[0];
 	var moteurElement = document.getElementById("moteur");
 	var libelEl = document.getElementById("libel");
+
+	var checkEl = document.getElementById("check");
+		var dimp1El = document.getElementById("dimp1");
+		var dimp2El = document.getElementById("dimp2");
+		var dimp3El = document.getElementById("dimp3");
+		var dimp4El = document.getElementById("dimp4");
+		var dimp5El = document.getElementById("dimp5");
+
 		immat[currentNum] = link[0].value;
 		marque[currentNum] = link[1].value;
 		modele[currentNum] = link[2].value;
@@ -515,6 +665,13 @@ $(document).on('click', "[id*='piece']", function(){
 		ref_mot[currentNum] = moteurElement.value;
 
 		phase[currentNum] = phaseElement.value;
+
+		check[currentNum] = checkEl.checked;
+		dimp1[currentNum] = dimp1El.value;
+		dimp2[currentNum] = dimp2El.value;
+		dimp3[currentNum] = dimp3El.value;
+		dimp4[currentNum] = dimp4El.value;
+		dimp5[currentNum] = dimp5El.value;
 
 		currentButton.className = "btn btn-custom piece";
 
@@ -535,14 +692,33 @@ $(document).on('click', "[id*='piece']", function(){
     		$('#phase').empty().append(new Option("Select Phase", "", true, true));
 		}
 
+
 		link[0].value=immat[currentNum];
+				try{
 		$('#marque').val(marque[currentNum]).change()
-		$('#modele').val(modele[currentNum]).change()
+		$('#modele').val(modele[currentNum]).change()}
+		catch{}
 	    link[2].value=modele[currentNum];
 		libelEl.value=libelle[currentNum];
 		link[4].value=num[currentNum];
 		link[5].value=energie[currentNum];
 		link[6].value=details[currentNum];
+
+
+		checkEl.checked = check[currentNum];
+		dimp1El.value = dimp1[currentNum];
+		dimp2El.value = dimp2[currentNum];
+		dimp3El.value = dimp3[currentNum];
+		dimp4El.value = dimp4[currentNum];
+		dimp5El.value = dimp5[currentNum];
+
+		var dimensions = document.getElementById('dimensions');
+    if (checkEl.checked) {
+        dimensions.style.display = 'flex';
+    } else {
+        dimensions.style.display = 'none';
+    }
+
 		link[7].value=categ[currentNum];
 
 		moteurElement.value = ref_mot[currentNum];
@@ -559,6 +735,14 @@ function submitForm() {
 	var phaseElement = document.getElementsByClassName(`phase`)[0];
 	var moteurElement = document.getElementById("moteur");
 	var libelEl = document.getElementById("libel");
+
+	var checkEl = document.getElementById("check");
+		var dimp1El = document.getElementById("dimp1");
+		var dimp2El = document.getElementById("dimp2");
+		var dimp3El = document.getElementById("dimp3");
+		var dimp4El = document.getElementById("dimp4");
+		var dimp5El = document.getElementById("dimp5");
+
 		immat[currentNum] = link[0].value;
 		marque[currentNum] = link[1].value;
 		modele[currentNum] = link[2].value;
@@ -567,6 +751,13 @@ function submitForm() {
 		energie[currentNum] = link[5].value;
 		details[currentNum] = link[6].value;
 		categ[currentNum] = link[7].value;
+
+		check[currentNum] = checkEl.checked;
+		dimp1[currentNum] = dimp1El.value;
+		dimp2[currentNum] = dimp2El.value;
+		dimp3[currentNum] = dimp3El.value;
+		dimp4[currentNum] = dimp4El.value;
+		dimp5[currentNum] = dimp5El.value;
 
 		ref_mot[currentNum] = moteurElement.value;
 
@@ -592,6 +783,19 @@ let employeeValue = document.getElementById('employeeSelect').value;
 let codepostalValue = document.getElementById('codePostal').value;
 let ticketInfo = document.getElementById('info').value;
 
+dim_pneu = [];
+
+for (let i=0; i<dimp1.length; i++){
+	dim_pneu[i] = dimp1[i] + "/" + dimp2[i] +" "+ dimp3[i] +" "+ dimp4[i] +" "+ dimp5[i];
+	if (dim_pneu[i].includes("undefined") || !check[i]){
+		dim_pneu[i] = "";
+	}
+	if (!dimp1[i] || !dimp2[i] || !dimp3[i] || !dimp4[i] || !dimp5[i]){
+		dim_pneu[i] = "";
+	}
+}
+
+
 	var dict= {
 		"type_client" : typeClientValue,
 		"nom" : nomValue,
@@ -608,7 +812,8 @@ let ticketInfo = document.getElementById('info').value;
 		"details" : details,
 		"employee" : employeeValue,
 		"phase" : phase,
-		"info" : ticketInfo
+		"info" : ticketInfo,
+		"dimension_pneu" : dim_pneu
 	}
 
 	var json = JSON.stringify(dict);
