@@ -3,9 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Gestion des Tickets</title>
+  <title>Liste Tickets</title>
   <!-- Bootstrap CSS -->
   <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
 
 
   <!-- Custom CSS -->
@@ -58,14 +60,7 @@
     padding: 10px;
 }
 
-.btn {
-    padding: 10px 20px;
-    border: none;
-    color: white;
-    background-color: #28a745;
-    cursor: pointer;
-    border-radius: 5px;
-}
+
 
 
   </style>
@@ -137,7 +132,12 @@
   <div class="card-header" id="heading{{ ticket.id }}" data-toggle="collapse" data-target="#collapse{{ ticket.id }}" aria-expanded="false" aria-controls="collapse{{ ticket.id }}" style="cursor: pointer;">
     <h5 class="mb-0">Ticket #{{ ticket.id }}: {% for piece in ticket.pieces %}{% set ns2.nom_employee = piece.ouvert_employee.nom %}<span class="badge" style="background-color: {{ piece.category.color }}; color:white;">{{ piece.libelle }}</span>&nbsp;{% endfor %}<br>{% if ticket.info is not none %}<span class="badge" style="border: 1px solid black; color:black;">{{ ticket.info }}</span>{% endif %}</h5>
     <hr>
-    <p class="mb-1" style=""><span style="font-weight: 700;">Téléphone:</span> {{ ticket.user.tel }}   &nbsp;&nbsp;<span style="font-weight: 700;">Statut:</span> <span id="ticketStatus">{{ ticket.status }}</span>   &nbsp;&nbsp;<span style="font-weight: 700;">Date:</span> {{ticket.created_at.strftime("%Y-%m-%d %H:%M") }} &nbsp;&nbsp;  <span style="font-weight: 700;">Crée par</span> {{ns2.nom_employee}}</p>
+    <p class="mb-1" style=""><span style="font-weight: 700;">Téléphone:</span> <span id="phone_{{ ticket.id}}">{{ticket.user.tel}}</span>   
+      <button type="button" class="btn btn-outline-dark" onclick="copyToClipboard('phone_{{ ticket.id }}', event)"> <i class="far fa-copy"></i> </button>
+
+
+
+      &nbsp;&nbsp;<span style="font-weight: 700;">Statut:</span> <span id="ticketStatus">{{ ticket.status }}</span>   &nbsp;&nbsp;<span style="font-weight: 700;">Date:</span> {{ticket.created_at.strftime("%Y-%m-%d %H:%M") }} &nbsp;&nbsp;  <span style="font-weight: 700;">Crée par</span> {{ns2.nom_employee}}</p>
   </div>
 
   <div id="collapse{{ ticket.id }}" class="collapse" aria-labelledby="heading{{ ticket.id }}" data-parent="#accordion">
@@ -227,6 +227,70 @@
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
 
 <script>
+
+var idleTime = 0;
+
+// Increment the idle time counter every minute.
+var idleInterval = setInterval(timerIncrement, 3000); // 1 minute
+
+// Zero the idle timer on mouse movement, key press, or scrolling.
+window.addEventListener('mousemove', timerReset);
+window.addEventListener('keydown', timerReset);
+window.addEventListener('scroll', timerReset);
+
+function timerIncrement() {
+    idleTime = idleTime + 1;
+    if (idleTime > 9) { // if the user is idle for 10 minutes
+        location.reload(); // reload the page
+    }
+}
+
+function timerReset() {
+    idleTime = 0; // reset the idle timer to 0
+}
+
+
+
+function copyToClipboard(elementId) {
+  event.stopPropagation();
+        /* Get the text field */
+        var copyText = document.getElementById(elementId).innerText.replace(/\./g, '');
+
+        /* Create a temporary textarea for the copy action */
+        var tempInput = document.createElement("textarea");
+        tempInput.value = copyText;
+        document.body.appendChild(tempInput);
+
+        /* Select the text field */
+        tempInput.select();
+        tempInput.setSelectionRange(0, 99999); /* For mobile devices */
+
+        /* Copy the text inside the text field */
+        document.execCommand("copy");
+
+        /* Remove the temporary textarea */
+        document.body.removeChild(tempInput);
+
+    
+    // Add tooltip to the button and change the title
+    $(event.target).attr({
+      'data-toggle': 'tooltip',
+      'data-placement': 'bottom',
+      'title': 'Copied!'
+    });
+
+    // Initialize tooltip
+    $(event.target).tooltip();
+
+    // Show the tooltip
+    $(event.target).tooltip('show');
+
+    // Remove tooltip after 1.5s
+    setTimeout(function(){
+        $(event.target).tooltip('dispose');
+    }, 1500);
+
+    }
 
 function savePrice(btn){
   var id = btn.id.replace(/[^0-9]/g,'');

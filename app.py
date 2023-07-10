@@ -94,7 +94,7 @@ class Ticket(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     status = db.Column(db.String(100))
-    created_at = db.Column(db.DateTime, default=datetime.now(pytz.timezone('Europe/Paris')))
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(pytz.timezone('Europe/Paris')))
     pieces = relationship('Piece', backref='ticket')
     info = db.Column(db.String(100))
 

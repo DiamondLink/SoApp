@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Submit Ticket</title>
+    <title>Ajout Ticket</title>
     <!-- Bootstrap CSS -->
 	<link rel="stylesheet" href="style.css">
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet">
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+	<link rel="icon" href="static/soa.ico" type="image/x-icon">
+
 
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
@@ -49,6 +51,21 @@
     visibility: visible;
     opacity: 1;
 }
+
+.copy-feedback {
+	position: absolute;
+  top: 0; 
+  left: 100%; 
+  display: none;
+  opacity: 1;
+  transition: opacity 2s;
+  color: green;
+}
+
+.infos {
+  position: relative;
+}
+
 
 	</style>
 </head>
@@ -95,11 +112,11 @@
     <label for="type_client" class="col-sm-4 col-form-label" style="font-weight: 700;">Type Client :</label>
     <div class="col-sm-6 infos">
         <div class="form-check form-check-inline">
-            <input class="form-check-input" type="radio" name="type_client" id="option1" value="option1" checked>
+            <input class="form-check-input" type="radio" name="type_client" id="option1" value="Particulier" checked>
             <label class="form-check-label" for="option1">Particulier</label>
         </div>
         <div class="form-check form-check-inline">
-            <input class="form-check-input" type="radio" name="type_client" id="option2" value="option2">
+            <input class="form-check-input" type="radio" name="type_client" id="option2" value="Professionnel">
             <label class="form-check-label" for="option2">Professionnel</label>
         </div>
     </div>
@@ -111,8 +128,12 @@
 						<div class="col-sm-6 infos">
 							<div class="input-group">
 								<span class="input-group-text">+33</span>
-								{{ form.tel(id="tel", class="form-control", oninput="formatInput(this)", maxlength="14") }}
+								{{ form.tel(id="tel", class="form-control phone-input", oninput="formatInput(this)", maxlength="14") }}
+								<div class="input-group-append">
+									<button class="btn btn-outline-secondary copy-btn" type="button">Copy</button>
+								  </div>
 							</div>
+							<span class="copy-feedback" style="display:none;">Copié!</span>
 						</div>
 					</div>
 					<div class="form-group row">
@@ -358,6 +379,33 @@ function formatInput(input) {
 
 
 $(document).ready(function() {
+
+	$('.copy-btn').on('click', function() {
+    var $phoneInput = $(this).closest('.input-group').find('.phone-input');
+    // Strip dots from the phone number
+    var phoneText = '+33' + $phoneInput.val().replace(/\./g, '');
+
+    
+    var tempInput = $("<input>");
+    $("body").append(tempInput);
+    tempInput.val(phoneText).select();
+    document.execCommand("copy");
+    tempInput.remove();
+
+	var copiedEl = document.getElementsByClassName('copy-feedback')[0];
+copiedEl.style.display = "block";
+
+setTimeout(function() {
+  copiedEl.style.opacity = '0';
+}, 1000); // 2000 milliseconds = 2 seconds
+
+setTimeout(function() {
+  copiedEl.style.display = 'none';
+  copiedEl.style.opacity = '1';
+}, 2000); // to ensure the element has disappeared after the fade out
+
+  });
+
     var data = {{ data | tojson }};
     $('#marque, #modele').change(function() {
         var selectedMarque = $('#marque').val();
