@@ -60,6 +60,13 @@
     padding: 10px;
 }
 
+.aligned-items {
+    display: flex;
+    align-items: center;
+  }
+  .aligned-items label {
+    line-height: 1;
+  }
 
 
 
@@ -85,7 +92,7 @@
 			  <a class="nav-link" href="ticket">Crée un ticket</a>
 			</li>
 			<li class="nav-item">
-				<a class="nav-link" href="user-db" target="_blank" onclick="openInNewTab(event)">Database</a>
+				<a class="nav-link" href="admin-db" target="_blank" onclick="openInNewTab(event)">Database</a>
 			</li>
 		  </ul>
 		</div>
@@ -118,11 +125,23 @@
     <div class="list-group my-4">
       <!-- Un ticket -->
       <div class="list-group-item ticket-list-item">
+        
         {% for ticket in tickets %}
+        
           {% if ticket.status != "Terminé" %}
 
-          {% set ns = namespace(first_piece_color='') %}
+          {% set ns = namespace(nb_pieces=0) %}
+          {% set ns.first_piece_color = '' %}
+          {% set ns.nb_piece_gere = 0 %}
+
+          
     {% for piece in ticket.pieces %}
+    {% set ns.nb_pieces = ns.nb_pieces + 1 %}
+      {% if piece.gere_par is none or piece.gere_par == '' %}
+      {% else %}
+      {% set ns.nb_piece_gere = ns.nb_piece_gere + 1 %}
+      {% endif %}
+
         {% if loop.first %}
             {% set ns.first_piece_color = piece.category.color %}
         {% endif %}
@@ -130,21 +149,25 @@
     {% set ns2 = namespace(nom_employee='g') %}
 <div class="card mb-1 ticketItem" style="border-color: {{ns.first_piece_color}};">
   <div class="card-header" id="heading{{ ticket.id }}" data-toggle="collapse" data-target="#collapse{{ ticket.id }}" aria-expanded="false" aria-controls="collapse{{ ticket.id }}" style="cursor: pointer;">
-    <h5 class="mb-0">Ticket #{{ ticket.id }}: {% for piece in ticket.pieces %}{% set ns2.nom_employee = piece.ouvert_employee.nom %}<span class="badge" style="background-color: {{ piece.category.color }}; color:white;">{{ piece.libelle }}</span>&nbsp;{% endfor %}<br>{% if ticket.info is not none %}<span class="badge" style="border: 1px solid black; color:black;">{{ ticket.info }}</span>{% endif %}</h5>
+    <h5 class="mb-0">Ticket #{{ ticket.id }}: {% for piece in ticket.pieces %}{% set ns2.nom_employee = piece.ouvert_employee.nom %}<span class="badge" style="background-color: {{ piece.category.color }}; color:white;">{{ piece.libelle }}</span>&nbsp;{% endfor %}
+      <span class="badge float-right" style="color: black; border: 1px solid black; font-size: 0.8em; font-weight: 400;"> <span class="nb_piece_gere_{{ ticket.id }}">{{ns.nb_piece_gere}}</span><span id="nb_piece_total_{{ticket.id}}">/{{ns.nb_pieces}}&nbsp;</span>pièces gérées</span>&nbsp;
+      <br>{% if ticket.info is not none %}<span class="badge" style="border: 1px solid black; color:black;">{{ ticket.info }}</span>{% endif %}
+      
+    </h5>
     <hr>
     <p class="mb-1" style=""><span style="font-weight: 700;">Téléphone:</span> <span id="phone_{{ ticket.id}}">{{ticket.user.tel}}</span>   
       <button type="button" class="btn btn-outline-dark" onclick="copyToClipboard('phone_{{ ticket.id }}', event)"> <i class="far fa-copy"></i> </button>
 
 
 
-      &nbsp;&nbsp;<span style="font-weight: 700;">Statut:</span> <span id="ticketStatus">{{ ticket.status }}</span>   &nbsp;&nbsp;<span style="font-weight: 700;">Date:</span> {{ticket.created_at.strftime("%Y-%m-%d %H:%M") }} &nbsp;&nbsp;  <span style="font-weight: 700;">Crée par</span> {{ns2.nom_employee}}</p>
+      &nbsp;&nbsp;  &nbsp;&nbsp;<span style="font-weight: 700;">Date:</span> {{ticket.created_at.strftime("%Y-%m-%d %H:%M") }} &nbsp;&nbsp;  <span style="font-weight: 700;">Crée par</span> {{ns2.nom_employee}}</p>
   </div>
 
   <div id="collapse{{ ticket.id }}" class="collapse" aria-labelledby="heading{{ ticket.id }}" data-parent="#accordion">
     <div class="card-body">
       <span class="badge" style="color: black; border: 1px solid black; font-size: 1em; font-weight: 400;"> Nom: {{ticket.user.nom}}</span>&nbsp;
       &emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;
-      <button type="button" class="btn btn-success" onclick="terminer(this)" id="#{{ticket.id}}">
+      <button type="button" class="btn btn-success float-right" style="margin-right: 10%;" onclick="terminer(this)" id="#{{ticket.id}}">
         Le client a été rapellé
       </button><br>
       {% for piece in ticket.pieces %}
@@ -160,11 +183,24 @@
       {% if piece.dimension_pneu !="" %}
       <span class="badge" style="color: black; border: 1px solid black; font-size: 1em; font-weight: 400;"> <strong>Dimension Pneu:</strong> <span class="dim_{{ piece.id }}">{{piece.dimension_pneu}}</span></span>&nbsp;
       {% endif %}
-      <span class="badge" style="color: black; border: 1px solid black; font-size: 1em; font-weight: 400;"> <strong>Commentaire:</strong> <span class="details_{{ piece.id }}">{{piece.details}}</span></span>&nbsp;
-
-      <button type="button" class="btn btn-warning" onclick="editPiece(this)" id="{{ piece.id }}_{{ ticket.id }}">
-        Edit
-      </button><br><br>
+      <br><br>
+      <div class="row aligned-items">
+        <div class="col-sm-auto">
+          <label id="{{ piece.id }}_{{ ticket.id }}" class="col-form-label" for="codePostal" style="font-weight: 400;font-size: 1.5em;">Commentaires :</label>
+        </div>
+        <div class="col-sm-4">
+          <input type="text" class="form-control tabs details_{{ piece.id }}" id="details" value="{{piece.details}}" readonly>
+        </div>
+        <div class="col-sm-auto">
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+          <button type="button" class="btn btn-warning" onclick="editPiece(this)" id="{{ piece.id }}_{{ ticket.id }}">
+            Edit
+          </button>
+        </div>
+      </div>
+      
+      
+      <br><br>
       
       <div class="row">
         <div class="col">
@@ -389,7 +425,11 @@ dispInput.setAttribute('placeholder', '');
 
 
 if (time=='load'){
-  var pieces = JSON.parse('{{ pieces | safe }}');
+  var pieces = {{ pieces | safe }};
+
+
+  //var pieces = JSON.parse('{{ pieces | tojson | safe }}');
+
 
     var piece = pieces.find(function(p) {
         return p.id === pieceID;
@@ -417,11 +457,23 @@ specificDiv.appendChild(dispDiv);}
 
 
 $(document).ready(function() {
-    $("select[id*='employeePiece']").change(function() {
+  var prevValue;
+
+$("select[id*='employeePiece']").on('focus', function() {
+    // Store the current value on focus, before the change event
+    prevValue = $(this).val();
+}).change(function() {
+  let id = parseInt($(this).attr('id').split('_')[1], 10);
+  let id2 = parseInt($(this).attr('id').split('_')[2], 10);
+if (prevValue === null){
+  nbEL = document.getElementsByClassName(`nb_piece_gere_${id2}`)[0];
+  nbEL.textContent = (parseInt(nbEL.textContent) + 1).toString();
+}
+
         var dict = {
           "gere_par" : $(this).val()
         }
-        let id = parseInt($(this).attr('id').split('_')[1], 10);
+        
 
         fetch('/update/Piece/' + id, {
     method: 'POST',
@@ -450,26 +502,27 @@ function editPiece(btn) {
 let ticketId = match[2];
 
 
-  var p = btn.parentElement.querySelector(`.immat_${pieceId}`);
-  var p2 = btn.parentElement.querySelector(`.marque_${pieceId}`);
-  var p3 = btn.parentElement.querySelector(`.modele_${pieceId}`);
-  var p4 = btn.parentElement.querySelector(`.num_${pieceId}`);
-  var p5 = btn.parentElement.querySelector(`.details_${pieceId}`);
-  var p6 = btn.parentElement.querySelector(`.mot_${pieceId}`);
+var p = document.getElementsByClassName(`immat_${pieceId}`)[0];
+var p2 = document.getElementsByClassName(`marque_${pieceId}`)[0];
+var p3 = document.getElementsByClassName(`modele_${pieceId}`)[0];
+var p4 = document.getElementsByClassName(`num_${pieceId}`)[0];
+var p5 = document.getElementsByClassName(`details_${pieceId}`)[0];
+var p6 = document.getElementsByClassName(`mot_${pieceId}`)[0];
+
 
   // Create a new input element
   var input = document.createElement("input");
   var input2 = document.createElement("input");
   var input3 = document.createElement("input");
   var input4 = document.createElement("input");
-  var input5 = document.createElement("input");
+  //var input5 = document.createElement("input");
   var input6 = document.createElement("input");
 
   input.className = `immat_${pieceId}`;
   input2.className = `marque_${pieceId}`;
   input3.className = `modele_${pieceId}`;
   input4.className = `num_${pieceId}`;
-  input5.className = `details_${pieceId}`;
+  //input5.className = `details_${pieceId}`;
   input6.className = `mot_${pieceId}`;
 
   
@@ -478,7 +531,7 @@ let ticketId = match[2];
   input2.value = p2.textContent;
   input3.value = p3.textContent;
   input4.value = p4.textContent;
-  input5.value = p5.textContent;
+  //input5.value = p5.textContent;
   input6.value = p6.textContent;
   
   // Replace the paragraph with the input
@@ -486,8 +539,10 @@ let ticketId = match[2];
   p2.parentNode.replaceChild(input2, p2);
   p3.parentNode.replaceChild(input3, p3);
   p4.parentNode.replaceChild(input4, p4);
-  p5.parentNode.replaceChild(input5, p5);
+  //p5.parentNode.replaceChild(input5, p5);
   p6.parentNode.replaceChild(input6, p6);
+
+  p5.removeAttribute("readonly");
 
 
   btn.textContent = "Save";
@@ -516,12 +571,12 @@ let ticketId = match[2];
   editPiece(this);
   }
 
-  var p = btn.parentElement.querySelector(`.immat_${pieceId}`);
-  var p2 = btn.parentElement.querySelector(`.marque_${pieceId}`);
-  var p3 = btn.parentElement.querySelector(`.modele_${pieceId}`);
-  var p4 = btn.parentElement.querySelector(`.num_${pieceId}`);
-  var p5 = btn.parentElement.querySelector(`.details_${pieceId}`);
-  var p6 = btn.parentElement.querySelector(`.mot_${pieceId}`);
+  var p = document.getElementsByClassName(`immat_${pieceId}`)[0];
+var p2 = document.getElementsByClassName(`marque_${pieceId}`)[0];
+var p3 = document.getElementsByClassName(`modele_${pieceId}`)[0];
+var p4 = document.getElementsByClassName(`num_${pieceId}`)[0];
+var p5 = document.getElementsByClassName(`details_${pieceId}`)[0];
+var p6 = document.getElementsByClassName(`mot_${pieceId}`)[0];
 
 
 
@@ -538,16 +593,13 @@ var dataPiece= {
     "status" : "En cours"
   }
 
-  var statusText = document.getElementById("ticketStatus");
-  statusText.textContent = "En cours"
-
 
 
   var span = document.createElement("span");
   var span2 = document.createElement("span");
   var span3 = document.createElement("span");
   var span4 = document.createElement("span");
-  var span5 = document.createElement("span");
+  //var span5 = document.createElement("span");
   var span6 = document.createElement("span");
 
 
@@ -555,22 +607,24 @@ var dataPiece= {
   span2.className = `marque_${pieceId}`;
   span3.className = `modele_${pieceId}`;
   span4.className = `num_${pieceId}`;
-  span5.className = `details_${pieceId}`;
+  //span5.className = `details_${pieceId}`;
   span6.className = `mot_${pieceId}`;
 
   span.textContent = p.value;
   span2.textContent = p2.value;
   span3.textContent = p3.value;
   span4.textContent = p4.value;
-  span5.textContent = p5.value;
+  //span5.textContent = p5.value;
   span6.textContent = p6.value;
 
   p.parentNode.replaceChild(span, p);
   p2.parentNode.replaceChild(span2, p2);
   p3.parentNode.replaceChild(span3, p3);
   p4.parentNode.replaceChild(span4, p4);
-  p5.parentNode.replaceChild(span5, p5);
+  //p5.parentNode.replaceChild(span5, p5);
   p6.parentNode.replaceChild(span6, p6);
+
+  p5.setAttribute("readonly", "readonly");
 
 
 
@@ -638,8 +692,7 @@ let dataTicket = {
     "status" : "En cours"
 };
 
-var statusText = document.getElementById("ticketStatus");
-  statusText.textContent = "En cours"
+
 
 let pieceId = match[1];
 let ticketId = match[2];

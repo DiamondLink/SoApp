@@ -30,6 +30,8 @@ from waitress import serve
 import apsw
 import os
 import sqlite3
+from flask_admin.contrib.sqla.filters import BaseSQLAFilter
+
 
 
 print("Initial working directory: ", os.getcwd())
@@ -422,6 +424,15 @@ def update_item(table_name, item_id):
 
 
 
+
+class CustomFilter(BaseSQLAFilter):
+    def apply(self, query, value, alias=None):
+        # this is just an example. You need to implement the join and filter operation here.
+        return query.join(Ticket).join(User).filter(User.tel.like(value))
+        
+    def operation(self):
+        return 'like'
+
 #FILTRES
 #User
 class UserAdmin(ModelView):
@@ -511,7 +522,7 @@ class PieceAdmin(ModelView):
         gere_par= lambda v, c, m, p: m.gere_employee.nom if m.gere_employee else ''
     )
 
-    column_list = ('immat', 'marque', 'modele', 'phase', 'libelle', 'numero', 'ref_mot', 'energie', 'details', 'etat', 'prix', 'user', "ouvert_par", "gere_par", 'ticket_status', 'num_ref_lp')
+    column_list = ('immat', 'marque', 'modele',  'libelle', 'numero', 'ref_mot', 'details', 'etat', 'prix', 'user', "ouvert_par", "gere_par", 'ticket_status', 'num_ref_lp')
 
     column_labels = {
         'user': 'Client', 
@@ -520,7 +531,9 @@ class PieceAdmin(ModelView):
         'ticket_status' : "Status du ticket",
         'numero' : "Ref Constructeur",
         'ref_mot' : "Ref Moteur",
-        'num_ref_lp' : "Ref/N°/LP Piece"
+        'num_ref_lp' : "Ref/N°/LP Piece",
+        'details' : "Commentaires",
+        'user' : "Tel"
     }
 
 
@@ -660,7 +673,6 @@ class PieceAdmin2(ModelView):
         filters.FilterLike(column=Piece.prix, name='Prix'),
         filters.FilterLike(column=Piece.ref_mot, name='ref_mot'),
         filters.FilterLike(column=Piece.num_ref_lp, name='Ref/N°/LP Piece'),
-
         
     )
 
@@ -670,7 +682,7 @@ class PieceAdmin2(ModelView):
         gere_par= lambda v, c, m, p: m.gere_employee.nom if m.gere_employee else ''
     )
 
-    column_list = ('immat', 'marque', 'modele', 'phase', 'libelle', 'numero', 'ref_mot', 'energie', 'details', 'etat', 'prix', 'user', "ouvert_par", "gere_par", 'ticket_status', 'num_ref_lp')
+    column_list = ('immat', 'marque', 'modele', 'libelle', 'numero', 'ref_mot', 'details', 'etat', 'prix', 'user', "ouvert_par", "gere_par", 'ticket_status', 'num_ref_lp')
 
     column_labels = {
         'user': 'Client', 
@@ -679,7 +691,9 @@ class PieceAdmin2(ModelView):
         'ticket_status' : "Status du ticket",
         'numero' : "Ref Constructeur",
         'ref_mot' : "Ref Moteur",
-        'num_ref_lp' : "Ref/N°/LP Piece"
+        'num_ref_lp' : "Ref/N°/LP Piece",
+        'details' : "Commentaires",
+        "user" : "Tel"
     }
 
 class ReadOnlyModelView(ModelView):
