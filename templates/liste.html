@@ -247,7 +247,7 @@
     <div class="addDiv{{ piece.id }}" style="float: left;"></div>
 
     <button 
-    style="display: {% if ns3.etatSel == 'En attente de traitement' or ns3.etatSel == 'Disponible confrère' %}none{% else %}block{% endif %};" 
+    style="display: {% if ns3.etatSel == 'En attente de traitement' or ns3.etatSel == 'Disponible confrère' %}none{% else %}none{% endif %};" 
     class="btn btn-success buttonSMS{{piece.id}}" 
     onclick="sendSMS(this)" 
     id="{{piece.id}}_{{ticket.id}}"
