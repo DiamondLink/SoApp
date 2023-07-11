@@ -170,6 +170,8 @@ class Employee(db.Model):
     gere_pieces = relationship('Piece', backref='gere_employee', foreign_keys=[Piece.gere_par])
 
 
+
+
 def backup_db_f(path_to_db, path_to_backup):
     # Connect to the existing database
     source = sqlite3.connect(path_to_db)
@@ -303,32 +305,41 @@ def add_employee():
 
 @app.route("/send_sms", methods=['POST'])
 def handle_sms():
-    print("sned")
 
     data = request.get_json()
     print(data)
 
+    with open('sms_text.json', 'r', encoding="utf-8") as f:
+        templates = json.load(f)
 
-    smsText = {
-        "Disponible" : 
-        
-"""Bonjour,
-Votre pièce est diponible. Prix : {} €. N° {}
-Sud Ouest Autos""".format(data["prix"], data["num"]),
+    piece = Piece.query.get(data["id"])
 
-        "Indisponible" : 
+    sms_text = templates[data["etat"]].format(prix=piece.prix, num=data["num"])
 
-"""Bonjour,
-La pièce demandé n'est pas disponible
-Sud Ouest Autos""",
+    print(sms_text)
 
-    }
-    send(smsText[data["etat"]], [data["tel"]])
+
+    send(sms_text, [data["tel"]])
 
     return "sms sended"
-    
 
-print("started")
+@app.route("/remove_dots_phone")
+def remove_dots_from_phone_numbers():
+    # Query all users
+    users = User.query.all()
+
+    # Iterate through all users and update the phone number
+    for user in users:
+        if user.tel:
+            # replace periods with empty string
+            new_tel = user.tel.replace('.', '')
+            user.tel = new_tel
+
+    # Commit changes to database
+    db.session.commit()
+
+    return "dots removed phone"
+    
 
 @app.route('/addinit')
 def add_initial_datas():
@@ -550,14 +561,15 @@ class PieceAdmin(ModelView):
         filters.FilterLike(column=Piece.marque, name='Marque'),
         filters.FilterLike(column=Piece.modele, name='Modele'),
         filters.FilterLike(column=Piece.libelle, name='Libelle'),
-        filters.FilterLike(column=Piece.numero, name='Numero'),
+        filters.FilterLike(column=Piece.numero, name='Ref Constructeur'),
+        filters.FilterLike(column=Piece.ref_mot, name='Ref Moteur'),
         filters.FilterLike(column=Piece.energie, name='Energie'),
-        filters.FilterLike(column=Piece.details, name='Details'),
         filters.FilterLike(column=Piece.etat, name='Etat'),
         filters.FilterLike(column=Piece.prix, name='Prix'),
         filters.FilterLike(column=Piece.ref_mot, name='Ref Moteur'),
         filters.FilterLike(column=Piece.num_ref_lp, name='Ref/N°/LP Piece'),
-        TelFilter(column=User.tel, name='Tel')
+        TelFilter(column=User.tel, name='Tel'),
+        filters.FilterLike(column=Piece.ticket_id, name='N° Ticket')
     )
 
     column_formatters = dict(
@@ -566,7 +578,7 @@ class PieceAdmin(ModelView):
         gere_par= lambda v, c, m, p: m.gere_employee.nom if m.gere_employee else ''
     )
 
-    column_list = ('immat', 'marque', 'modele',  'libelle', 'numero', 'ref_mot', 'details', 'etat', 'prix', 'user', "ouvert_par", "gere_par",'num_ref_lp')
+    column_list = ('ticket_id', 'immat', 'marque', 'modele',  'libelle', 'numero', 'ref_mot', 'details', 'etat', 'prix', 'user', "ouvert_par", "gere_par",'num_ref_lp')
 
     column_labels = {
         'user': 'Client', 
@@ -576,7 +588,8 @@ class PieceAdmin(ModelView):
         'ref_mot' : "Ref Moteur",
         'num_ref_lp' : "Ref/N°/LP Piece",
         'details' : "Commentaires",
-        'user' : "Tel"
+        'user' : "Tel",
+        'ticket_id' : "N° Ticket"
     }
 
 
@@ -588,9 +601,6 @@ def is_table_empty(table_name):
     with app.app_context():
         return db.session.query(table_name).count() == 0
 
-
-#add_categories()
-#add_employee()
 
 
 admin = Admin(app, name='Base de donnée [Administrateur]', template_mode='bootstrap3', url='/admin-db', endpoint='admin_db')
@@ -709,14 +719,15 @@ class PieceAdmin2(ModelView):
         filters.FilterLike(column=Piece.marque, name='Marque'),
         filters.FilterLike(column=Piece.modele, name='Modele'),
         filters.FilterLike(column=Piece.libelle, name='Libelle'),
-        filters.FilterLike(column=Piece.numero, name='Numero'),
+        filters.FilterLike(column=Piece.numero, name='Ref Constructeur'),
+        filters.FilterLike(column=Piece.ref_mot, name='Ref Moteur'),
         filters.FilterLike(column=Piece.energie, name='Energie'),
-        filters.FilterLike(column=Piece.details, name='Details'),
         filters.FilterLike(column=Piece.etat, name='Etat'),
         filters.FilterLike(column=Piece.prix, name='Prix'),
-        filters.FilterLike(column=Piece.ref_mot, name='ref_mot'),
+        filters.FilterLike(column=Piece.ref_mot, name='Ref Moteur'),
         filters.FilterLike(column=Piece.num_ref_lp, name='Ref/N°/LP Piece'),
-        TelFilter(column=User.tel, name='Tel')
+        TelFilter(column=User.tel, name='Tel'),
+        filters.FilterLike(column=Piece.ticket_id, name='N° Ticket')
     )
 
     column_formatters = dict(
@@ -725,7 +736,7 @@ class PieceAdmin2(ModelView):
         gere_par= lambda v, c, m, p: m.gere_employee.nom if m.gere_employee else ''
     )
 
-    column_list = ('immat', 'marque', 'modele', 'libelle', 'numero', 'ref_mot', 'details', 'etat', 'prix', 'user', "ouvert_par", "gere_par", 'num_ref_lp')
+    column_list = ('ticket_id', 'immat', 'marque', 'modele', 'libelle', 'numero', 'ref_mot', 'details', 'etat', 'prix', 'user', "ouvert_par", "gere_par", 'num_ref_lp')
 
     column_labels = {
         'user': 'Client', 
@@ -735,7 +746,8 @@ class PieceAdmin2(ModelView):
         'ref_mot' : "Ref Moteur",
         'num_ref_lp' : "Ref/N°/LP Piece",
         'details' : "Commentaires",
-        "user" : "Tel"
+        "user" : "Tel",
+        'ticket_id' : "N° Ticket"
     }
 
 class ReadOnlyModelView(ModelView):
@@ -755,5 +767,5 @@ admin2.add_view(ReadOnlyModelView(Employee, db.session, name='Employés', endpoi
 
 
 if __name__ == '__main__':
+    print("\nProgram Started !")
     serve(app, host='0.0.0.0', port=5000)
-

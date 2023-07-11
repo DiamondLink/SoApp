@@ -213,11 +213,13 @@
       
       <div class="row">
         <div class="col">
+          {% set ns3 = namespace(etatSel='') %}
             {% set etats = ['En attente de traitement', 'Disponible', 'Disponible à démonter', 'Disponible confrère', 'Indisponible'] %}
             <label for="exampleInput">État :</label>
-            <select id="etatPiece_{{ piece.id }}_{{ ticket.id }}" class="form-control selectClass" data-tel="{{piece.user.tel}}" data-prix="{{piece.prix}}" data-num="{{ticket.id}}">
+            <select id="etatPiece_{{ piece.id }}_{{ ticket.id }}" class="form-control selectClass" data-tel="{{piece.user.tel}}" data-id="{{piece.id}}" data-num="{{ticket.id}}">
             {% for etat in etats %}
                 {% if piece.etat == etat %}
+                {% set ns3.etatSel = etat %}
                     <option selected>{{ etat }}</option>
                 {% else %}
                     <option>{{ etat }}</option>
@@ -244,11 +246,15 @@
 
     <div class="addDiv{{ piece.id }}" style="float: left;"></div>
 
-    <button class="btn btn-success" onclick="sendSMS(this)" id="{{piece.id}}_{{ticket.id}}">Envoyer SMS</button>
+    <button 
+    style="display: {% if ns3.etatSel == 'En attente de traitement' or ns3.etatSel == 'Disponible confrère' %}none{% else %}block{% endif %};" 
+    class="btn btn-success buttonSMS{{piece.id}}" 
+    onclick="sendSMS(this)" 
+    id="{{piece.id}}_{{ticket.id}}"
+>
+    Envoyer SMS
+</button>
 
-<div id="alert-message" class="alert alert-success" style="display: none;">
-  SMS sent successfully!
-</div>
 
 
     <div class="form-group">
@@ -317,7 +323,7 @@ function sendSMS(btn) {
   let dataPiece = {
     "etat" : selectEl.value,
     "tel" : selectEl.getAttribute("data-tel"),
-    "prix" : selectEl.getAttribute("data-prix"),
+    "id" : selectEl.getAttribute("data-id"),
     "num" : selectEl.getAttribute("data-num")
 };
 
@@ -334,7 +340,7 @@ fetch('/send_sms', {
     }
 })
 } else{
-notyf.error('Numero Fixe. Non envoyé!');
+notyf.error('Numero Fixe ou Invalide!');
 }
 
 }
@@ -400,6 +406,7 @@ function savePrice(btn){
         throw new Error("HTTP error " + response.status);
     }
 })
+notyf.success("Prix Enregistré!")
 }
 
     function update_lp(textVal, id){
@@ -706,6 +713,7 @@ fetch('/update/Piece/' + pieceId, {
 }).catch(function() {
     // Handle the error here
 });
+notyf.success("Enregistré!")
 
   }
 
@@ -737,11 +745,16 @@ fetch('/update/Piece/' + pieceId, {
       var id = this.id;
       const match = id.match(regex);
 
+      buttonSMS = document.getElementsByClassName(`buttonSMS${match[1]}`)[0];
+      if (this.value != "En attente de traitement" && this.value != 'Disponible confrère'){
+          buttonSMS.style.display = "block";
+      } else {
+        buttonSMS.style.display = "none";
+      }
+
 
      let dataPiece = {
-    "etat" : this.value,
-    "tel" : dataTel,
-    "info" : "send_sms"
+    "etat" : this.value
 };
 
 let dataTicket = {
@@ -804,6 +817,8 @@ function terminer(btn){
     }
 })
   btn.parentNode.parentNode.parentNode.style.display = 'none';
+
+  notyf.success("Ticket Archivé!")
 
 }
 
