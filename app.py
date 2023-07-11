@@ -31,6 +31,9 @@ import apsw
 import os
 import sqlite3
 from flask_admin.contrib.sqla.filters import BaseSQLAFilter
+from send_sms import send
+from flask_admin.model.filters import BaseFilter
+from sqlalchemy.orm import joinedload
 
 
 
@@ -298,6 +301,33 @@ def add_employee():
     db.session.add_all([new_employee, new_employee2, new_employee3, new_employee4, new_employee5, new_employee6, new_employee7, new_employee8])
     db.session.commit()
 
+@app.route("/send_sms", methods=['POST'])
+def handle_sms():
+    print("sned")
+
+    data = request.get_json()
+    print(data)
+
+
+    smsText = {
+        "Disponible" : 
+        
+"""Bonjour,
+Votre pièce est diponible. Prix : {} €. N° {}
+Sud Ouest Autos""".format(data["prix"], data["num"]),
+
+        "Indisponible" : 
+
+"""Bonjour,
+La pièce demandé n'est pas disponible
+Sud Ouest Autos""",
+
+    }
+    send(smsText[data["etat"]], [data["tel"]])
+
+    return "sms sended"
+    
+
 print("started")
 
 @app.route('/addinit')
@@ -406,6 +436,7 @@ def update_item(table_name, item_id):
     data = request.get_json()  # get the data from the POST request
     print(data)
 
+
     if table_name == 'Piece':
         item = Piece.query.get(item_id)
     elif table_name == 'Ticket':
@@ -425,6 +456,8 @@ def update_item(table_name, item_id):
 
 
 
+
+
 class CustomFilter(BaseSQLAFilter):
     def apply(self, query, value, alias=None):
         # this is just an example. You need to implement the join and filter operation here.
@@ -434,6 +467,16 @@ class CustomFilter(BaseSQLAFilter):
         return 'like'
 
 #FILTRES
+class TelFilter(BaseFilter):
+    def __init__(self, column, name):
+        super(TelFilter, self).__init__(name)
+        self.column = column
+
+    def apply(self, query, value, alias=None):
+        return query.join(Piece.ticket).join(Ticket.user).filter(User.tel.ilike("%{}%".format(value)))
+
+    def operation(self):
+        return 'contient'
 #User
 class UserAdmin(ModelView):
     column_filters = [
@@ -514,6 +557,7 @@ class PieceAdmin(ModelView):
         filters.FilterLike(column=Piece.prix, name='Prix'),
         filters.FilterLike(column=Piece.ref_mot, name='Ref Moteur'),
         filters.FilterLike(column=Piece.num_ref_lp, name='Ref/N°/LP Piece'),
+        TelFilter(column=User.tel, name='Tel')
     )
 
     column_formatters = dict(
@@ -522,13 +566,12 @@ class PieceAdmin(ModelView):
         gere_par= lambda v, c, m, p: m.gere_employee.nom if m.gere_employee else ''
     )
 
-    column_list = ('immat', 'marque', 'modele',  'libelle', 'numero', 'ref_mot', 'details', 'etat', 'prix', 'user', "ouvert_par", "gere_par", 'ticket_status', 'num_ref_lp')
+    column_list = ('immat', 'marque', 'modele',  'libelle', 'numero', 'ref_mot', 'details', 'etat', 'prix', 'user', "ouvert_par", "gere_par",'num_ref_lp')
 
     column_labels = {
         'user': 'Client', 
         'ouvert_par' : 'Crée par',
         'gere_par' : "Géré par",
-        'ticket_status' : "Status du ticket",
         'numero' : "Ref Constructeur",
         'ref_mot' : "Ref Moteur",
         'num_ref_lp' : "Ref/N°/LP Piece",
@@ -554,7 +597,7 @@ admin = Admin(app, name='Base de donnée [Administrateur]', template_mode='boots
 babel.init_app(app, locale_selector=lambda : 'fr')
 
 admin.add_view(UserAdmin(User, db.session, name='Clients', endpoint='admin_clients'))  # give the view a unique name
-admin.add_view(TicketAdmin(Ticket, db.session, name='Tickets', endpoint='admin_tickets'))
+#admin.add_view(TicketAdmin(Ticket, db.session, name='Tickets', endpoint='admin_tickets'))
 admin.add_view(PieceAdmin(Piece, db.session, name='Pièces', endpoint='admin_pieces'))
 admin.add_view(ModelView(Category, db.session, name='Catégories', endpoint='admin_categories'))
 admin.add_view(ModelView(Employee, db.session, name='Employés', endpoint='admin_employees'))
@@ -673,7 +716,7 @@ class PieceAdmin2(ModelView):
         filters.FilterLike(column=Piece.prix, name='Prix'),
         filters.FilterLike(column=Piece.ref_mot, name='ref_mot'),
         filters.FilterLike(column=Piece.num_ref_lp, name='Ref/N°/LP Piece'),
-        
+        TelFilter(column=User.tel, name='Tel')
     )
 
     column_formatters = dict(
@@ -682,13 +725,12 @@ class PieceAdmin2(ModelView):
         gere_par= lambda v, c, m, p: m.gere_employee.nom if m.gere_employee else ''
     )
 
-    column_list = ('immat', 'marque', 'modele', 'libelle', 'numero', 'ref_mot', 'details', 'etat', 'prix', 'user', "ouvert_par", "gere_par", 'ticket_status', 'num_ref_lp')
+    column_list = ('immat', 'marque', 'modele', 'libelle', 'numero', 'ref_mot', 'details', 'etat', 'prix', 'user', "ouvert_par", "gere_par", 'num_ref_lp')
 
     column_labels = {
         'user': 'Client', 
         'ouvert_par' : 'Crée par',
         'gere_par' : "Géré par",
-        'ticket_status' : "Status du ticket",
         'numero' : "Ref Constructeur",
         'ref_mot' : "Ref Moteur",
         'num_ref_lp' : "Ref/N°/LP Piece",
@@ -706,7 +748,7 @@ class ReadOnlyModelView(ModelView):
 admin2 = Admin(app, name='Base de donnée', template_mode='bootstrap3', url='/user-db', endpoint='user_db')
 
 admin2.add_view(UserAdmin2(User, db.session, name='Clients', endpoint='user_clients'))  # give the view a unique name
-admin2.add_view(TicketAdmin2(Ticket, db.session, name='Tickets', endpoint='user_tickets'))
+#admin2.add_view(TicketAdmin2(Ticket, db.session, name='Tickets', endpoint='user_tickets'))
 admin2.add_view(PieceAdmin2(Piece, db.session, name='Pièces', endpoint='user_pieces'))
 admin2.add_view(ReadOnlyModelView(Category, db.session, name='Catégories', endpoint='user_categories'))
 admin2.add_view(ReadOnlyModelView(Employee, db.session, name='Employés', endpoint='user_employees'))

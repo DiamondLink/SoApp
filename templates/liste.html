@@ -7,6 +7,9 @@
   <!-- Bootstrap CSS -->
   <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/notyf@3.9.0/notyf.min.css">
+<script src="https://cdn.jsdelivr.net/npm/notyf@3.9.0/notyf.min.js"></script>
+
 
 
 
@@ -67,6 +70,12 @@
   .aligned-items label {
     line-height: 1;
   }
+
+  .custom-notyf-error {
+  background-color: red;
+  color: white;
+}
+
 
 
 
@@ -206,7 +215,7 @@
         <div class="col">
             {% set etats = ['En attente de traitement', 'Disponible', 'Disponible à démonter', 'Disponible confrère', 'Indisponible'] %}
             <label for="exampleInput">État :</label>
-            <select id="etatPiece_{{ piece.id }}_{{ ticket.id }}" class="form-control selectClass">
+            <select id="etatPiece_{{ piece.id }}_{{ ticket.id }}" class="form-control selectClass" data-tel="{{piece.user.tel}}" data-prix="{{piece.prix}}" data-num="{{ticket.id}}">
             {% for etat in etats %}
                 {% if piece.etat == etat %}
                     <option selected>{{ etat }}</option>
@@ -234,6 +243,13 @@
     <br>
 
     <div class="addDiv{{ piece.id }}" style="float: left;"></div>
+
+    <button class="btn btn-success" onclick="sendSMS(this)" id="{{piece.id}}_{{ticket.id}}">Envoyer SMS</button>
+
+<div id="alert-message" class="alert alert-success" style="display: none;">
+  SMS sent successfully!
+</div>
+
 
     <div class="form-group">
       <label for="codePostal" class="form-label">Prix :</label>
@@ -264,6 +280,8 @@
 
 <script>
 
+var notyf = new Notyf();
+
 var idleTime = 0;
 
 // Increment the idle time counter every minute.
@@ -286,6 +304,40 @@ function timerReset() {
 }
 
 
+
+function sendSMS(btn) {
+  var id = btn.id;
+  selectEl = document.getElementById(`etatPiece_${id}`);
+  
+
+  if (selectEl.getAttribute("data-tel").startsWith("+337") || selectEl.getAttribute("data-tel").startsWith("+336")){
+
+  notyf.success('SMS envoyé!');
+
+  let dataPiece = {
+    "etat" : selectEl.value,
+    "tel" : selectEl.getAttribute("data-tel"),
+    "prix" : selectEl.getAttribute("data-prix"),
+    "num" : selectEl.getAttribute("data-num")
+};
+
+
+fetch('/send_sms', {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(dataPiece)
+}).then(response => {
+    if (!response.ok) {
+        throw new Error("HTTP error " + response.status);
+    }
+})
+} else{
+notyf.error('Numero Fixe. Non envoyé!');
+}
+
+}
 
 function copyToClipboard(elementId) {
   event.stopPropagation();
@@ -680,12 +732,16 @@ fetch('/update/Piece/' + pieceId, {
   for(var i=0; i<selects.length; i++){
     selects[i].addEventListener("change", function() {
 
+      var dataTel = this.getAttribute('data-tel');
+
       var id = this.id;
       const match = id.match(regex);
 
 
      let dataPiece = {
-    "etat" : this.value
+    "etat" : this.value,
+    "tel" : dataTel,
+    "info" : "send_sms"
 };
 
 let dataTicket = {

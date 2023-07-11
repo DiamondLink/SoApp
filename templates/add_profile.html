@@ -822,7 +822,7 @@ function submitForm() {
     }
 
 let nomValue = document.getElementById('nom').value;
-let telValue = "+33" + document.getElementById('tel').value;
+let telValue = "+33" + document.getElementById('tel').value.replace(/\./g, '');;
 
 telValue = telValue.replace('+330', '+33');
 
