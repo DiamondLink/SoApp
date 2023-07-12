@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Ajout Ticket</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+	<link rel="icon" href="static/soa.ico" type="image/x-icon">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/notyf@3.9.0/notyf.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/notyf@3.9.0/notyf.min.js"></script>
+    
+
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+	<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+    <style>
+
+
+#vertical-line {
+  border-left: 1px solid black;
+  position: absolute;
+  top: 20%; /* The top margin is set to 10% of the viewport height */
+  bottom: -60%; /* The bottom margin is set to 10% of the viewport height */
+  left: 50%; /* This positions the line in the middle of the viewport */
+}
+
+    </style>
+
+</head>
+<body>
+	<nav class="navbar navbar-expand-lg navbar-light bg-light">
+		<a class="navbar-brand" href="menu">
+			<img width=200 src="static/soa.png" alt="Logo">
+		</a>
+		<button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+		  <span class="navbar-toggler-icon"></span>
+		</button>
+		<div class="collapse navbar-collapse" id="navbarNav">
+		  <ul class="navbar-nav">
+			<li class="nav-item active">
+			  <a class="nav-link" href="menu">Menu</a>
+			</li>
+			<li class="nav-item">
+			  <a class="nav-link" href="liste">Liste</a>
+			</li>
+			<li class="nav-item">
+			  <a class="nav-link" href="ticket">Crée un ticket</a>
+			</li>
+			<li class="nav-item">
+				<a class="nav-link" href="admin-db" target="_blank" onclick="openInNewTab(event)">Database</a>
+			</li>
+		  </ul>
+		</div>
+	  </nav>
+
+
+      <br>
+      
+      <div class="form-group row" style="margin-left: 5%; margin-right: 5%;">
+        <div class="col-sm-2">
+            <label class="col-form-label" style="font-weight: 500; font-size:x-large;">Téléphone contient :</label>
+        </div>
+        <div class="col-sm-10">
+            <form method="POST" action="/ticket" class="d-flex justify-content-between align-items-center">
+                <div class="input-group col-sm-6">
+                    <input type="text" name="tel" class="form-control form-control-lg" placeholder="Numéro d'un client">
+                    <div class="input-group-append">
+                        <button type="submit" class="btn btn-primary">Recherche Tickets</button>
+                    </div>
+                </div>
+                <a type="button" class="btn btn-primary ml-auto float-right btn-lg" href="/create_ticket">Créer un Ticket</a>
+            </form>
+        </div>
+    </div>
+    
+    
+    
+    
+    
+    <hr>
+
+    <div id="accordion">
+        {% for ticket in tickets %}
+            <div class="card mb-1 ticketItem">
+                <div class="card-header" id="heading{{ ticket.id }}" data-toggle="collapse" data-target="#collapse{{ ticket.id }}" aria-expanded="false" aria-controls="collapse{{ ticket.id }}" style="cursor: pointer;">
+                    <h5 class="mb-0">Ticket #{{ ticket.id }}: {% for piece in ticket.pieces %}<span class="badge" style="background-color: {{ piece.category.color }}; color:white;">{{ piece.libelle }}</span>&nbsp;{% endfor %}
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                        <span><span style="font-weight: 700;">Date:</span> {{ticket.created_at.strftime("%Y-%m-%d %H:%M") }}</span>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                        <span><span style="font-weight: 700;">Tel:</span> {{ticket.user.tel}}</span>
+                        <button style="margin-right:5%;" class="btn btn-success float-right" onclick="restore(this)" id="{{ticket.id}}">Restaurer</button>
+                    </h5>
+                </div>
+            </div>
+        {% else %}
+        {% if first == "False" %}
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        <span>Aucun ticket</span>
+        {% endif %}
+        {% endfor %}
+    </div>
+    
+        
+
+
+</body>
+<script>
+
+var notyf = new Notyf();
+
+function restore(btn){
+    ticketId = btn.id;
+
+    var dict = {
+          "id" : ticketId
+        }
+        
+
+        fetch('/restore', {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(dict)
+}).then(response => {
+    if (!response.ok) {
+        throw new Error("HTTP error " + response.status);
+    }
+})
+
+notyf.success("Ticket restauré !")
+}
+
+
+
+
+</script>
+</html>

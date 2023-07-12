@@ -306,6 +306,8 @@ def add_employee():
 @app.route("/send_sms", methods=['POST'])
 def handle_sms():
 
+    telephone = "05 61 37 52 00"
+
     data = request.get_json()
     print(data)
 
@@ -314,7 +316,7 @@ def handle_sms():
 
     piece = Piece.query.get(data["id"])
 
-    sms_text = templates[data["etat"]].format(prix=piece.prix, num=data["num"])
+    sms_text = templates[data["etat"]].format(prix=piece.prix, num=data["num"], telSOA = telephone, libelle = piece.libelle)
 
     print(sms_text)
 
@@ -347,12 +349,8 @@ def add_initial_datas():
     add_employee()
     return "Initial Datas Added"
  
-@app.route('/ticket', methods=['GET', 'POST'])
+@app.route('/create_ticket', methods=['GET', 'POST'])
 def submit_ticket():
-    #add_categories()
-    #add_employee()
-
-
     with open('modeles.json') as f:
         data = json.load(f)
 
@@ -371,6 +369,82 @@ def submit_ticket():
     employee = Employee.query.all()
 
     return render_template('add_profile.html', form=form, category = categories, employee = employee, data=data)
+
+
+def update_ticket_and_pieces_for_restore(ticket_id, ticket_fields, piece_fields):
+    # Get the ticket by id
+    ticket = Ticket.query.get(ticket_id)
+
+    print(ticket.id)
+    print(ticket.created_at)
+
+    # Update the ticket fields
+    for key, value in ticket_fields.items():
+        setattr(ticket, key, value)
+
+    # Commit the ticket changes to the database
+    db.session.commit()
+
+    # Get all pieces attached to this ticket
+    pieces = Piece.query.filter_by(ticket_id=ticket_id).all()
+
+    # Update the pieces
+    for piece in pieces:
+        for key, value in piece_fields.items():
+            setattr(piece, key, value)
+
+    # Commit the pieces changes to the database
+    db.session.commit()
+
+# Example of usage:
+
+
+
+@app.route("/restore", methods = ['POST'])
+def restore():
+    data = request.get_json()
+    print(data)
+
+    ticketDict = {
+        "status" : "En attente de traitement"
+    }
+    pieceDict = {
+        "etat" : "En attente de traitement",
+        "prix" : "A définir",
+        "gere_par" : None
+    }
+
+    update_ticket_and_pieces_for_restore(data["id"], ticketDict, pieceDict)
+
+    return "restored"
+
+
+
+@app.route('/ticket', methods=['GET', 'POST'])
+def get_tickets():
+    if request.method == 'POST':
+        tickets = []
+        tel = request.form.get('tel')
+        if len(tel) == 0:
+            return render_template('search_client.html', tickets=tickets, first = "False")
+        if tel[0] == "0":
+            tel = tel[1:]
+        
+        if tel[:4] == "+330":
+            tel = "+33" + tel[4:]
+        
+        print(tel)
+
+        users = User.query.filter(User.tel.like(f"%{tel}%"))
+
+        for user in users:
+            for tik in user.tickets:
+                tickets.append(tik)
+            # Pass this tickets object to your HTML page
+        return render_template('search_client.html', tickets=tickets, first="False")
+
+    return render_template('search_client.html', first = "True")
+
 
 
 @app.route('/get_data', methods=['POST'])
@@ -398,22 +472,13 @@ def get_data():
             data[key].pop(0)
 
 
-    print(data)
     for i in range(len(data["immat"])):    #TODO
-        print("run")
         try:
-            print("try1")
             category = Category.query.filter_by(category_name=data['category'][i]).first()
-            print("try2")
             employee = Employee.query.filter_by(nom=data["employee"]).first()
-            print("try3")
             new_pieces.append(Piece(ouvert_par = employee.id, ticket_id=new_ticket.id, category_id = category.id, immat = data["immat"][i], marque = data["marque"][i], modele = data["modele"][i], libelle = data["libelle"][i], numero = data["numero"][i], energie = data["energie"][i], etat = "En attente de traitement", details = data["details"][i], prix = "A définir", phase = data["phase"][i], ref_mot = data["ref_mot"][i],dimension_pneu = data["dimension_pneu"][i]))
-            print("try4")
         except Exception as e:
             print("Error: ", str(e))
-
-        print(new_pieces)
-        print("end")
 
     db.session.add_all(new_pieces)
 
@@ -434,8 +499,6 @@ def liste():
     category = Category.query.all()
     employee = Employee.query.all()
     pieces = [piece.to_dict() for piece in Piece.query.join(Ticket).filter(Ticket.status != 'Terminé').all()]
-    for t in tickets:
-        print(t.info)
 
     return render_template('liste.html', tickets=tickets, category = category, employee = employee, pieces=json.dumps(pieces))
 
@@ -445,7 +508,6 @@ def liste():
 @app.route('/update/<string:table_name>/<int:item_id>', methods=['POST'])
 def update_item(table_name, item_id):
     data = request.get_json()  # get the data from the POST request
-    print(data)
 
 
     if table_name == 'Piece':

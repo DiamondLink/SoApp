@@ -1,5 +1,5 @@
 {
-    "Disponible": "La pièce demandée est disponible.Prix : {prix} €\nN° {num}\nAppelez le 05 61 37 52 00 pour infos\n\nSud Ouest Autos",
-    "Indisponible": "La pièce demandé n'est pas disponible\n\nSud Ouest Autos",
-    "Disponible à démonter" : "Votre pièce est disponible et à démonter\nPrix : {prix} €\nAppelez le 05 61 37 52 00 pour la réserver\nN° Ticket : {num}\n\nSud Ouest Auto"
+    "Disponible": "Votre pièce : {libelle}, est disponible en stock à {prix} €.\nVotre numéro : {num}. Contactez le {telSOA}\nSud Ouest Autos",
+    "Indisponible": "Votre pièce : {libelle}, est indisponible\nNous vous recontacterons si dispo prochaine\n\nSud Ouest Autos",
+    "Disponible à démonter" : "Votre pièce : {libelle}, est disponible à démonter à {prix} €.\nVotre numéro : {num}. Contactez le {telSOA}\nSud Ouest Autos"
 }

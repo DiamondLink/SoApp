@@ -737,7 +737,21 @@ notyf.success("Enregistré!")
   });
 
   var selects = document.getElementsByClassName('selectClass');
+
+
   for(var i=0; i<selects.length; i++){
+    var dataTel = selects[i].getAttribute('data-tel');
+
+      var id = selects[i].id;
+      const match = id.match(regex);
+
+      buttonSMS = document.getElementsByClassName(`buttonSMS${match[1]}`)[0];
+      if (selects[i].value != "En attente de traitement" && selects[i].value != 'Disponible confrère'){
+          buttonSMS.style.display = "block";
+      } else {
+        buttonSMS.style.display = "none";
+      }
+
     selects[i].addEventListener("change", function() {
 
       var dataTel = this.getAttribute('data-tel');
