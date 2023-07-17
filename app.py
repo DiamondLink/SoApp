@@ -34,6 +34,10 @@ from flask_admin.contrib.sqla.filters import BaseSQLAFilter
 from send_sms import send
 from flask_admin.model.filters import BaseFilter
 from sqlalchemy.orm import joinedload
+import shutil
+import dropbox
+import threading
+import requests
 
 
 
@@ -170,65 +174,56 @@ class Employee(db.Model):
     gere_pieces = relationship('Piece', backref='gere_employee', foreign_keys=[Piece.gere_par])
 
 
+def refresh_access_token(refresh_token, client_id, client_secret):
+    payload = {
+        'grant_type': 'refresh_token',
+        'refresh_token': refresh_token,
+        'client_id': client_id,
+        'client_secret': client_secret
+    }
+    
+    response = requests.post('https://api.dropboxapi.com/oauth2/token', data=payload)
 
+    if response.status_code == 200:
+        return response.json()['access_token']
+    else:
+        raise Exception("Failed to refresh access token")
 
-def backup_db_f(path_to_db, path_to_backup):
-    # Connect to the existing database
-    source = sqlite3.connect(path_to_db)
-
-    # Connect to the backup database
-    destination = sqlite3.connect(path_to_backup)
-
-    # Perform the backup
-    source.backup(destination)
-
-    # Close the database connections
-    source.close()
-    destination.close()
-
-def backup_db(path_to_db, path_to_backup):
-    if not os.path.exists(path_to_backup):
-        # If not, create a backup first
-        backup_db_f(path_to_db, path_to_backup)
-    # Connect to the existing database
-    source_conn = sqlite3.connect(path_to_db)
-    source_cursor = source_conn.cursor()
-
-    # Connect to the backup database
-    backup_conn = sqlite3.connect(path_to_backup)
-    backup_cursor = backup_conn.cursor()
-
-    # Get all table names
-    source_cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
-    tables = source_cursor.fetchall()
-
-    for table in tables:
-        table = table[0]
-
-        # Get all rows from the table in the source database
-        source_cursor.execute(f"SELECT * FROM {table};")
-        rows = source_cursor.fetchall()
-
-        # Get the column names
-        column_names = list(map(lambda x: x[0], source_cursor.description))
-
-        for row in rows:
-            # Create the insert or ignore command
-            query = f"""
-            INSERT OR IGNORE INTO {table} ({', '.join(column_names)})
-            VALUES ({', '.join(['?']*len(row))});
-            """
-            backup_cursor.execute(query, row)
-
-    # Commit the changes and close the connections
-    backup_conn.commit()
-    source_conn.close()
-    backup_conn.close()
-
-
-@app.route("/backup")
 def backup():
-    backup_db('instance//app_db.db', 'instance//backup_db.db')
+    db_path = 'instance//app_db.db'
+    backup_dir = ''  # replace with your actual backup directory path
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')  # get current date and time
+    backup_file = os.path.join(backup_dir, f'app_db_backup_{timestamp}.db')
+
+    shutil.copy2(db_path, backup_file)
+
+    # Replace these with your actual refresh token, client ID, and client secret
+    refresh_token = 'I6DBkNRjykkAAAAAAAAAAXmjQ6HtuK_KndTiwERrySempP_Kyr7xwlPqnKV0UKyl'
+    client_id = '2tn6o03mhzqz3or'
+    client_secret = 'ejj3dsfgzws8db2'
+
+    # Refresh the access token
+    access_token = refresh_access_token(refresh_token, client_id, client_secret)
+
+    dbx = dropbox.Dropbox(access_token)
+
+    with open(backup_file, 'rb') as f:
+        dbx.files_upload(f.read(), f'/Backups/{backup_file}', mode=dropbox.files.WriteMode('overwrite'))
+
+    os.remove(backup_file)
+
+    print("Backup Saved")
+
+    folder_path = '/Backups'
+    thirty_days_ago = datetime.now() - timedelta(days=180)
+    for entry in dbx.files_list_folder(folder_path).entries:
+        if isinstance(entry, dropbox.files.FileMetadata):
+            file_path = entry.path_lower
+            file_modified_time = entry.client_modified
+            if file_modified_time < thirty_days_ago:
+                dbx.files_delete_v2(file_path)
+
+
     return "Backup Saved"
 
 
@@ -828,6 +823,26 @@ admin2.add_view(ReadOnlyModelView(Category, db.session, name='Catégories', endp
 admin2.add_view(ReadOnlyModelView(Employee, db.session, name='Employés', endpoint='user_employees'))
 
 
+def time_until_next_month():
+    now = datetime.now()
+
+    # If we're in December, the next first of the month is in January of the next year.
+    if now.month == 12:
+        next_month = now.replace(year=now.year+1, month=1, day=1, hour=0, minute=0, second=0)
+    else:
+        next_month = now.replace(month=now.month+1, day=1, hour=0, minute=0, second=0)
+
+    return (next_month - now).total_seconds()
+
+def periodic_backup():
+    while True:
+        backup()
+        time.sleep(time_until_next_month())
+
+
 if __name__ == '__main__':
+    t = threading.Thread(target=periodic_backup)
+    t.start()
+    print("Backup Program Started !")
     print("\nProgram Started !")
     serve(app, host='0.0.0.0', port=5000)

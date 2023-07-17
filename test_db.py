@@ -17,7 +17,7 @@ with app.app_context():
 
 for j in range(10000):
     with app.app_context():
-        new_user = User(type_client=generate_random_string(7), prenom =generate_random_string(7), nom = generate_random_string(7), tel=str(randrange(1111111111, 9999999999)), code_postal = generate_random_string(5))
+        new_user = User(type_client=generate_random_string(7), nom = generate_random_string(7), tel=str(randrange(1111111111, 9999999999)), code_postal = generate_random_string(5))
         db.session.add(new_user)
         db.session.commit()
         new_ticket = Ticket(user_id=new_user.id, status="En attente de traitement")

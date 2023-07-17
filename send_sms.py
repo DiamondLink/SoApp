@@ -20,8 +20,10 @@ def send(content, receivers):
         'class': 'flash',
         'coding': '7bit',
         'priority': 'high',
+        'sender' : 'S O AUTOS',
         'receivers': receivers, # The receiver's phone number
-        'senderForResponse': True,    # The sender will be chosen according to available senders and a random selection
+        'senderForResponse': False,    # The sender will be chosen according to available senders and a random selection
+        'noStopClause': True  # Add this line
     }
 
 # Create a new job to send a message
