@@ -1,9 +1,20 @@
-from app import db, app, User, Ticket, Category, Employee, Piece, add_categories, add_employee
+from app import User, Ticket, Category, Employee, Piece, add_categories, add_employee
 import random
+from flask import Flask
+from flask_sqlalchemy import SQLAlchemy
 
 import random
 from random import randrange
 import string
+import os
+
+print(os.getcwd())
+
+
+app = Flask(__name__)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///C://Users//Baptiste//Downloads//flask_app//templates//instance//app_db.db'
+
+db = SQLAlchemy(app)
 
 def generate_random_string(length):
     characters = string.ascii_letters + string.digits
@@ -11,8 +22,12 @@ def generate_random_string(length):
     return random_string
 
 with app.app_context():
-    add_categories()
-    add_employee()
+    #add_categories()
+    #add_employee()
+    pass
+
+with app.app_context():
+    print(db.engine.table_names())
 
 
 for j in range(10000):

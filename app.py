@@ -1,45 +1,5 @@
-from flask import Flask, request, redirect, url_for, session, Markup, jsonify
-from flask.templating import render_template
-from flask_sqlalchemy import SQLAlchemy
-from flask_migrate import Migrate, migrate
-from flask import Flask, render_template, request
-from flask_wtf import FlaskForm
-from wtforms import StringField, SelectField, SubmitField, TextAreaField, BooleanField
-from wtforms.validators import DataRequired
-from wtforms.fields import TelField
-from flask_sqlalchemy import SQLAlchemy
-from flask_migrate import Migrate, migrate
-from flask import Flask, request
-from sqlalchemy import or_, and_
-from flask import Flask, request, jsonify
-import time
-import json
-from datetime import datetime, timedelta
-from sqlalchemy.orm import relationship
-from flask_admin import Admin
-from flask_admin.contrib.sqla import ModelView
-from flask_babel import Babel
-from flask_admin.contrib.sqla import filters
-from flask_admin.helpers import get_url
-from markupsafe import Markup
-from flask_admin import expose
-from sqlalchemy.orm import joinedload
-import pytz
-from sqlalchemy.ext.hybrid import hybrid_property
-from waitress import serve
-import apsw
 import os
-import sqlite3
-from flask_admin.contrib.sqla.filters import BaseSQLAFilter
-from send_sms import send
-from flask_admin.model.filters import BaseFilter
-from sqlalchemy.orm import joinedload
-import shutil
-import dropbox
-import threading
-import requests
-
-
+import time
 
 print("Initial working directory: ", os.getcwd())
 # This will print your initial working directory before any changes are made.
@@ -59,6 +19,57 @@ print("New directory to switch to: ", new_directory)
 os.chdir(new_directory)
 print("Final working directory: ", os.getcwd())
 # This will print the final working directory after the change.
+
+path = "C:\\Users\\Baptiste\\Downloads\\trash"
+
+with open(path + '\\log1.txt', 'a') as f:
+    f.write(time.ctime() + '\n')
+
+
+
+from flask import Flask, request, redirect, url_for, session, Markup, jsonify
+from flask.templating import render_template
+from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate, migrate
+from flask import Flask, render_template, request
+from flask_wtf import FlaskForm
+from wtforms import StringField, SelectField, SubmitField, TextAreaField, BooleanField
+from wtforms.validators import DataRequired
+from wtforms.fields import TelField
+from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate, migrate
+from flask import Flask, request
+from sqlalchemy import or_, and_
+from flask import Flask, request, jsonify
+import json
+from datetime import datetime, timedelta
+from sqlalchemy.orm import relationship
+from flask_admin import Admin
+from flask_admin.contrib.sqla import ModelView
+from flask_babel import Babel
+from flask_admin.contrib.sqla import filters
+from flask_admin.helpers import get_url
+from markupsafe import Markup
+from flask_admin import expose
+from sqlalchemy.orm import joinedload
+import pytz
+from sqlalchemy.ext.hybrid import hybrid_property
+from waitress import serve
+import apsw
+import sqlite3
+from flask_admin.contrib.sqla.filters import BaseSQLAFilter
+from send_sms import send
+from flask_admin.model.filters import BaseFilter
+from sqlalchemy.orm import joinedload
+import shutil
+import dropbox
+import threading
+import requests
+
+
+with open(path + '\\log2.txt', 'a') as f:
+    f.write(time.ctime() + '\n')
+
 
 template_dir = os.path.abspath(new_directory)
 
@@ -84,6 +95,10 @@ db = SQLAlchemy(app)
  
 # Settings for migrations
 migrate = Migrate(app, db)
+
+with open(path + '\\log3.txt', 'a') as f:
+    f.write(time.ctime() + '\n')
+
  
 # Models
 
@@ -174,6 +189,11 @@ class Employee(db.Model):
     gere_pieces = relationship('Piece', backref='gere_employee', foreign_keys=[Piece.gere_par])
 
 
+with open(path + '\\log4.txt', 'a') as f:
+    f.write(time.ctime() + '\n')
+
+
+
 def refresh_access_token(refresh_token, client_id, client_secret):
     payload = {
         'grant_type': 'refresh_token',
@@ -239,6 +259,8 @@ def delete_all_data_main_db():
 
 
 
+with open(path + '\\log5.txt', 'a') as f:
+    f.write(time.ctime() + '\n')
 
 
 
@@ -337,6 +359,10 @@ def remove_dots_from_phone_numbers():
 
     return "dots removed phone"
     
+
+with open(path + '\\log6.txt', 'a') as f:
+    f.write(time.ctime() + '\n')
+
 
 @app.route('/addinit')
 def add_initial_datas():
@@ -440,6 +466,8 @@ def get_tickets():
 
     return render_template('search_client.html', first = "True")
 
+with open(path + '\\log7.txt', 'a') as f:
+    f.write(time.ctime() + '\n')
 
 
 @app.route('/get_data', methods=['POST'])
@@ -524,6 +552,8 @@ def update_item(table_name, item_id):
 
 
 
+with open(path + '\\log8.txt', 'a') as f:
+    f.write(time.ctime() + '\n')
 
 
 class CustomFilter(BaseSQLAFilter):
@@ -652,6 +682,8 @@ class PieceAdmin(ModelView):
 
 
 
+with open(path + '\\log9.txt', 'a') as f:
+    f.write(time.ctime() + '\n')
 
 
 def is_table_empty(table_name):
@@ -692,6 +724,8 @@ admin.add_view(ModelView(Employee, db.session, name='Employés', endpoint='admin
 
 
 
+with open(path + '\\log10.txt', 'a') as f:
+    f.write(time.ctime() + '\n')
 
 
 
@@ -840,9 +874,21 @@ def periodic_backup():
         time.sleep(time_until_next_month())
 
 
+with open(path + '\\log11.txt', 'a') as f:
+    f.write(time.ctime() + '\n')
+
+
+
 if __name__ == '__main__':
+    with open(path + '\\log12.txt', 'a') as f:
+        f.write(time.ctime() + '\n')
+
     t = threading.Thread(target=periodic_backup)
     t.start()
     print("Backup Program Started !")
     print("\nProgram Started !")
+
+    with open(path + '\\log13.txt', 'a') as f:
+        f.write(time.ctime() + '\n')
+
     serve(app, host='0.0.0.0', port=5000)
