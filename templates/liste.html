@@ -247,14 +247,14 @@
     <div class="addDiv{{ piece.id }}" style="float: left;"></div>
 
     <button 
-    style="display: {% if ns3.etatSel == 'En attente de traitement' or ns3.etatSel == 'Disponible confrère' %}none{% else %}none{% endif %};" 
+    style="display: {% if ns3.etatSel == 'En attente de traitement' or ns3.etatSel == 'Disponible confrère' %}none{% else %}block{% endif %};" 
     class="btn btn-success buttonSMS{{piece.id}}" 
     onclick="sendSMS(this)" 
     id="{{piece.id}}_{{ticket.id}}"
 >
     Envoyer SMS
 </button>
-
+<span id="disptext_{{piece.id}}_{{ticket.id}}" style="color: orange;display: {% if piece.energie[-1:] == '1' %}block{% else %}none{% endif %}; " >! SMS a été envoyé</span>
 
 
     <div class="form-group">
@@ -319,6 +319,9 @@ function sendSMS(btn) {
   if (selectEl.getAttribute("data-tel").startsWith("+337") || selectEl.getAttribute("data-tel").startsWith("+336")){
 
   notyf.success('SMS envoyé!');
+
+  disptextEl = document.getElementById(`disptext_${id}`),
+  disptextEl.style.display = "block";
 
   let dataPiece = {
     "etat" : selectEl.value,

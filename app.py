@@ -20,12 +20,6 @@ os.chdir(new_directory)
 print("Final working directory: ", os.getcwd())
 # This will print the final working directory after the change.
 
-path = "C:\\Users\\Baptiste\\Downloads\\trash"
-
-with open(path + '\\log1.txt', 'a') as f:
-    f.write(time.ctime() + '\n')
-
-
 
 from flask import Flask, request, redirect, url_for, session, Markup, jsonify
 from flask.templating import render_template
@@ -67,10 +61,6 @@ import threading
 import requests
 
 
-with open(path + '\\log2.txt', 'a') as f:
-    f.write(time.ctime() + '\n')
-
-
 template_dir = os.path.abspath(new_directory)
 
  
@@ -96,8 +86,6 @@ db = SQLAlchemy(app)
 # Settings for migrations
 migrate = Migrate(app, db)
 
-with open(path + '\\log3.txt', 'a') as f:
-    f.write(time.ctime() + '\n')
 
  
 # Models
@@ -189,8 +177,7 @@ class Employee(db.Model):
     gere_pieces = relationship('Piece', backref='gere_employee', foreign_keys=[Piece.gere_par])
 
 
-with open(path + '\\log4.txt', 'a') as f:
-    f.write(time.ctime() + '\n')
+
 
 
 
@@ -257,10 +244,6 @@ def delete_all_data_main_db():
         db.session.commit()
     return 'All data from the main database has been deleted.'
 
-
-
-with open(path + '\\log5.txt', 'a') as f:
-    f.write(time.ctime() + '\n')
 
 
 
@@ -333,6 +316,11 @@ def handle_sms():
 
     piece = Piece.query.get(data["id"])
 
+    piece.energie = piece.energie[:-1] + '1'
+    print(piece.libelle)
+    print(piece.energie)
+    db.session.commit()
+
     sms_text = templates[data["etat"]].format(prix=piece.prix, num=data["num"], telSOA = telephone, libelle = piece.libelle)
 
     print(sms_text)
@@ -360,8 +348,6 @@ def remove_dots_from_phone_numbers():
     return "dots removed phone"
     
 
-with open(path + '\\log6.txt', 'a') as f:
-    f.write(time.ctime() + '\n')
 
 
 @app.route('/addinit')
@@ -466,8 +452,7 @@ def get_tickets():
 
     return render_template('search_client.html', first = "True")
 
-with open(path + '\\log7.txt', 'a') as f:
-    f.write(time.ctime() + '\n')
+
 
 
 @app.route('/get_data', methods=['POST'])
@@ -499,7 +484,7 @@ def get_data():
         try:
             category = Category.query.filter_by(category_name=data['category'][i]).first()
             employee = Employee.query.filter_by(nom=data["employee"]).first()
-            new_pieces.append(Piece(ouvert_par = employee.id, ticket_id=new_ticket.id, category_id = category.id, immat = data["immat"][i], marque = data["marque"][i], modele = data["modele"][i], libelle = data["libelle"][i], numero = data["numero"][i], energie = data["energie"][i], etat = "En attente de traitement", details = data["details"][i], prix = "A définir", phase = data["phase"][i], ref_mot = data["ref_mot"][i],dimension_pneu = data["dimension_pneu"][i]))
+            new_pieces.append(Piece(ouvert_par = employee.id, ticket_id=new_ticket.id, category_id = category.id, immat = data["immat"][i], marque = data["marque"][i], modele = data["modele"][i], libelle = data["libelle"][i], numero = data["numero"][i], energie = data["energie"][i] + "0", etat = "En attente de traitement", details = data["details"][i], prix = "A définir", phase = data["phase"][i], ref_mot = data["ref_mot"][i],dimension_pneu = data["dimension_pneu"][i]))
         except Exception as e:
             print("Error: ", str(e))
 
@@ -550,10 +535,6 @@ def update_item(table_name, item_id):
         return f"Item with ID {item_id} in {table_name} not found", 404
 
 
-
-
-with open(path + '\\log8.txt', 'a') as f:
-    f.write(time.ctime() + '\n')
 
 
 class CustomFilter(BaseSQLAFilter):
@@ -682,10 +663,6 @@ class PieceAdmin(ModelView):
 
 
 
-with open(path + '\\log9.txt', 'a') as f:
-    f.write(time.ctime() + '\n')
-
-
 def is_table_empty(table_name):
     with app.app_context():
         return db.session.query(table_name).count() == 0
@@ -706,26 +683,6 @@ admin.add_view(ModelView(Employee, db.session, name='Employés', endpoint='admin
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-with open(path + '\\log10.txt', 'a') as f:
-    f.write(time.ctime() + '\n')
 
 
 
@@ -874,21 +831,16 @@ def periodic_backup():
         time.sleep(time_until_next_month())
 
 
-with open(path + '\\log11.txt', 'a') as f:
-    f.write(time.ctime() + '\n')
 
 
 
 if __name__ == '__main__':
-    with open(path + '\\log12.txt', 'a') as f:
-        f.write(time.ctime() + '\n')
 
     t = threading.Thread(target=periodic_backup)
     t.start()
     print("Backup Program Started !")
     print("\nProgram Started !")
 
-    with open(path + '\\log13.txt', 'a') as f:
-        f.write(time.ctime() + '\n')
+
 
     serve(app, host='0.0.0.0', port=5000)
